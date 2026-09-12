@@ -24,6 +24,7 @@ RACINE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "telechargemen
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
 ORIGINE = "https://tavvkkj.xyz"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8907
+HOST = os.environ.get("HOST", "127.0.0.1")   # HOST=0.0.0.0 pour le LAN / tunnel
 OFFLINE = os.environ.get("ONLINE") != "1"   # hors ligne par défaut
 
 TYPE_SUP = {".webp": "image/webp", ".js": "text/javascript", ".css": "text/css",
@@ -335,4 +336,4 @@ class Gestionnaire(BaseHTTPRequestHandler):
             pass
 
 if __name__ == "__main__":
-    ThreadingHTTPServer(("127.0.0.1", PORT), Gestionnaire).serve_forever()
+    ThreadingHTTPServer((HOST, PORT), Gestionnaire).serve_forever()

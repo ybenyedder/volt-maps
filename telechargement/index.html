@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Volt Maps · miroir hors ligne</title>
-<meta name="description" content="Volt Maps — miroir open source du player WebGL Reborn. 100 % local, aucune donnée collectée.">
+<title>Volt Maps · offline mirror</title>
+<meta name="description" content="Volt Maps — open source mirror of the Reborn WebGL player. 100% local, no data collected.">
 <link rel="icon" href="/favicon.webp?v=3">
 <style>
   /* ——— Volt Maps · thème « cartouche arcade » — fond encre, accent ambre, typographie pressée ——— */
@@ -453,49 +453,48 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
         <circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>
       </svg>
-      <input id="recherche" type="search" placeholder="rechercher une carte…" autocomplete="off">
+      <input id="recherche" type="search" placeholder="search a map…" autocomplete="off">
     </div>
     <span id="compteur" style="display:none"></span>
   </header>
 
   <main>
     <div class="tete-grille">
-      <h2>Bibliothèque <em>— toutes les cartes</em></h2>
+      <h2>Library <em>— all maps</em></h2>
       <div class="aide">
-        <span><kbd>/</kbd> rechercher</span>
-        <span><kbd>échap</kbd> quitter une partie</span>
+        <span><kbd>/</kbd> search</span>
+        <span><kbd>esc</kbd> quit a run</span>
       </div>
     </div>
     <div id="filtres"></div>
     <div id="grille"></div>
-    <div id="vide" hidden>Aucune carte ne correspond à cette recherche.</div>
+    <div id="vide" hidden>No map matches your search.</div>
   </main>
 
   <footer>
     <div class="cols">
       <div>
-        <h3>Projet open source</h3>
-        <p>Volt Maps est un miroir communautaire du player WebGL Reborn.
-           Aucun compte, aucun traceur, aucune donnée collectée : tout tourne
-           sur ta machine, déconnecté du réseau.</p>
-        <p>Les cartes proviennent du contenu officiel et restent la propriété
-           de leurs auteurs respectifs.</p>
+        <h3>Open source project</h3>
+        <p>Volt Maps is a community mirror of the Reborn WebGL player.
+           No account, no trackers, no data collected: everything runs on your
+           machine, fully offline.</p>
+        <p>Maps come from the official game content and remain the property
+           of their respective owners.</p>
       </div>
       <div>
-        <h3>Soutenir</h3>
-        <p>Le miroir est gratuit et le restera. Si le projet te sert,
-           une donation aide à le garder en vie.</p>
-        <a class="lien-don" href="https://paypal.me/AdamMezerai" target="_blank" rel="noopener">Faire un don — paypal.me/AdamMezerai</a>
+        <h3>Support</h3>
+        <p>The mirror is free and will stay that way. If it serves you,
+           a donation helps keep it alive.</p>
+        <a class="lien-don" href="https://paypal.me/AdamMezerai" target="_blank" rel="noopener">Donate — paypal.me/AdamMezerai</a>
       </div>
       <div>
-        <h3>Technique</h3>
-        <p>Player <code>reborn-shared-enhanced-local</code> · service worker de
-           déchiffrement · cache disque persistant · activation signée localement.</p>
-        <p>Modes jouables : <b>Enhanced</b> (build unifié) et <b>Training</b>.</p>
+        <h3>Technical</h3>
+        <p>Player <code>reborn-shared-enhanced-local</code> · decryption service
+           worker · persistent disk cache · locally signed activation.</p>
+        <p>Playable modes: <b>Enhanced</b> (unified build) and <b>Training</b>.</p>
       </div>
     </div>
     <div class="bas">
-      <span>à usage strictement personnel — ne pas héberger en ligne</span>
       <span>contenu du jeu © SYBO Games · miroir made by volt</span>
     </div>
   </footer>
@@ -505,19 +504,19 @@
 <div id="modale" hidden>
   <div class="feuille">
     <h3 id="modale-nom">Carte</h3>
-    <p class="sous">Choisis la version à lancer — chaque mode a sa propre URL.</p>
+    <p class="sous">Pick the version to launch — each mode has its own URL.</p>
     <a class="choix" id="choix-enhanced" href="#">
       <span class="ico">E+</span>
       <span><span class="t">Enhanced</span>
-      <div class="d">L'édition améliorée — le jeu complet, comme sur le site d'origine.</div></span>
+      <div class="d">The enhanced edition — the full game, just like the original site.</div></span>
     </a>
     <a class="choix" id="choix-training" href="#">
       <span class="ico">T</span>
       <span><span class="t">Training</span>
-      <div class="d">Mode entraînement : idéal pour apprendre les tracés et les tricks.</div></span>
+      <div class="d">Training mode: learn the tracks and tricks.</div></span>
     </a>
     <div class="rang-actions">
-      <button class="btn btn-secondaire" id="modale-fermer">Annuler</button>
+      <button class="btn btn-secondaire" id="modale-fermer">Cancel</button>
     </div>
   </div>
 </div>
@@ -527,20 +526,20 @@
   <canvas id="unity-canvas"></canvas>
 
   <div id="chargement">
-    <div class="titre" id="titre-chargement">Chargement…</div>
+    <div class="titre" id="titre-chargement">Loading…</div>
     <div class="piste"><div id="barre"></div></div>
-    <div id="statut">Préparation…</div>
+    <div id="statut">Preparing…</div>
   </div>
 
   <div id="erreur" hidden>
     <div class="panneau-erreur">
-      <h2>Impossible de lancer la carte</h2>
+      <h2>Unable to launch the map</h2>
       <p id="message-erreur"></p>
       <pre id="journal"></pre>
       <div class="rang-actions">
-        <button class="btn btn-primaire" id="btn-reessayer">Réessayer</button>
-        <button class="btn btn-secondaire" id="btn-vider">Vider le cache Unity</button>
-        <button class="btn btn-secondaire" id="btn-retour2">Retour aux cartes</button>
+        <button class="btn btn-primaire" id="btn-reessayer">Retry</button>
+        <button class="btn btn-secondaire" id="btn-vider">Clear Unity cache</button>
+        <button class="btn btn-secondaire" id="btn-retour2">Back to maps</button>
       </div>
     </div>
   </div>
@@ -554,59 +553,59 @@
   var FPS_MOYEN = {'atlanta':54, 'bali':48, 'bangkok':50, 'barcelona':50, 'beijing':43, 'beijing-cn':48, 'berlin':50, 'buenos-aires':48, 'cairo':49, 'chang-an-cn':47, 'chicago':46, 'chicago-3-11':49, 'classic':50, 'copenhagen':49, 'copenhagen-super-runner':49, 'cosmic-crossroads':46, 'dubai':47, 'dunhuang':50, 'easter-ireland':47, 'edinburgh-cn':47, 'greece':50, 'guangzhou-cn':45, 'guilin-cn':51, 'hangzhou':49, 'harbin-cn':51, 'haunted-hood':50, 'havana':46, 'hawaii':47, 'hong-kong':47, 'houston':44, 'iceland':49, 'journey-through-china-cn':48, 'journey-to-the-east':60, 'kenya':49, 'las-vegas':49, 'london':48, 'lunar-new-year':50, 'luoyang':50, 'macau-cn':50, 'marrakesh':50, 'mexico':48, 'mexico-city':51, 'miami':47, 'monaco':49, 'moscow':50, 'mumbai':49, 'new-orleans':51, 'new-york':50, 'north-pole':48, 'oxford':50, 'paris':50, 'paris-cn':50, 'peru':51, 'prague':50, 'rio':49, 'rome':44, 'saint-petersburg':46, 'sakura-tokyo':48, 'san-francisco':51, 'sao-paulo':50, 'seoul':49, 'shenzhen':49, 'shenzhen-showdown':50, 'singapore':50, 'space-station':50, 'st-petersburg':50, 'subway-city':47, 'suzhou':53, 'sydney':51, 'tokyo':50, 'transylvania':49, 'underwater':46, 'vancouver':51, 'vancouver-spring':49, 'venice':47, 'venice-beach':51, 'washington-dc':48, 'winter-holiday':48, 'winter-wonderland':49, 'wuhan':48, 'zurich':50};
 
   var META_CATALOGUE = {
-  'atlanta':{r:'États-Unis',c:'rgb(249 115 22)',v:'1.98'},
-  'bangkok':{r:'Thaïlande',c:'rgb(236 72 153)',v:'1.102'},
-  'barcelona':{r:'Espagne',c:'rgb(249 115 22)',v:'1.76'},
-  'beijing':{r:'Chine',c:'rgb(239 68 68)',v:'1.114'},
-  'berlin':{r:'Allemagne',c:'rgb(234 179 8)',v:'1.92'},
-  'buenos-aires':{r:'Argentine',c:'rgb(56 189 248)',v:'1.118'},
-  'cairo':{r:'Égypte',c:'rgb(245 158 11)',v:'1.81'},
-  'chicago':{r:'États-Unis',c:'rgb(251 146 60)',v:'3.11'},
+  'atlanta':{r:'United States',c:'rgb(249 115 22)',v:'1.98'},
+  'bangkok':{r:'Thailand',c:'rgb(236 72 153)',v:'1.102'},
+  'barcelona':{r:'Spain',c:'rgb(249 115 22)',v:'1.76'},
+  'beijing':{r:'China',c:'rgb(239 68 68)',v:'1.114'},
+  'berlin':{r:'Germany',c:'rgb(234 179 8)',v:'1.92'},
+  'buenos-aires':{r:'Argentina',c:'rgb(56 189 248)',v:'1.118'},
+  'cairo':{r:'Egypt',c:'rgb(245 158 11)',v:'1.81'},
+  'chicago':{r:'United States',c:'rgb(251 146 60)',v:'3.11'},
   'classic':{r:'Subway City',c:'rgb(239 68 68)',v:'1.0.4'},
-  'copenhagen-super-runner':{r:'Danemark',c:'rgb(14 165 233)',v:'3.63'},
-  'dunhuang':{r:'Chine',c:'rgb(217 119 6)',v:'2.99.0'},
-  'easter-ireland':{r:'Irlande',c:'rgb(74 222 128)',v:'3.61'},
-  'greece':{r:'Grèce',c:'rgb(56 189 248)',v:'2.38'},
-  'hangzhou':{r:'Chine',c:'rgb(20 184 166)',v:'6.03.0'},
-  'haunted-hood':{r:'Spécial',c:'rgb(168 85 247)',v:'3.19'},
+  'copenhagen-super-runner':{r:'Denmark',c:'rgb(14 165 233)',v:'3.63'},
+  'dunhuang':{r:'China',c:'rgb(217 119 6)',v:'2.99.0'},
+  'easter-ireland':{r:'Ireland',c:'rgb(74 222 128)',v:'3.61'},
+  'greece':{r:'Greece',c:'rgb(56 189 248)',v:'2.38'},
+  'hangzhou':{r:'China',c:'rgb(20 184 166)',v:'6.03.0'},
+  'haunted-hood':{r:'Special',c:'rgb(168 85 247)',v:'3.19'},
   'havana':{r:'Cuba',c:'rgb(34 197 94)',v:'1.90'},
-  'hawaii':{r:'États-Unis',c:'rgb(20 184 166)',v:'1.70'},
-  'hong-kong':{r:'Chine',c:'rgb(239 68 68)',v:'1.93'},
-  'houston':{r:'États-Unis',c:'rgb(59 130 246)',v:'1.111'},
+  'hawaii':{r:'United States',c:'rgb(20 184 166)',v:'1.70'},
+  'hong-kong':{r:'China',c:'rgb(239 68 68)',v:'1.93'},
+  'houston':{r:'United States',c:'rgb(59 130 246)',v:'1.111'},
   'iceland':{r:'Islande',c:'rgb(56 189 248)',v:'2.36'},
-  'kenya':{r:'Quênia',c:'rgb(234 179 8)',v:'1.45'},
-  'las-vegas':{r:'États-Unis',c:'rgb(244 114 182)',v:'3.25.2'},
-  'london':{r:'Royaume-Uni',c:'rgb(239 68 68)',v:'1.96.2'},
-  'lunar-new-year':{r:'Chine',c:'rgb(239 68 68)',v:'3.26.2'},
-  'luoyang':{r:'Chine',c:'rgb(126 52 91)',v:'3.3.0'},
-  'mexico':{r:'Mexique',c:'rgb(234 179 8)',v:'1.78'},
-  'mexico-city':{r:'Mexique',c:'rgb(250 204 21)',v:'1.21'},
-  'miami':{r:'États-Unis',c:'rgb(244 114 182)',v:'1.105'},
+  'kenya':{r:'Kenya',c:'rgb(234 179 8)',v:'1.45'},
+  'las-vegas':{r:'United States',c:'rgb(244 114 182)',v:'3.25.2'},
+  'london':{r:'United Kingdom',c:'rgb(239 68 68)',v:'1.96.2'},
+  'lunar-new-year':{r:'China',c:'rgb(239 68 68)',v:'3.26.2'},
+  'luoyang':{r:'China',c:'rgb(126 52 91)',v:'3.3.0'},
+  'mexico':{r:'Mexico',c:'rgb(234 179 8)',v:'1.78'},
+  'mexico-city':{r:'Mexico',c:'rgb(250 204 21)',v:'1.21'},
+  'miami':{r:'United States',c:'rgb(244 114 182)',v:'1.105'},
   'monaco':{r:'Monaco',c:'rgb(244 63 94)',v:'1.87'},
-  'moscow':{r:'Russie',c:'rgb(96 165 250)',v:'1.108'},
-  'new-orleans':{r:'États-Unis',c:'rgb(168 85 247)',v:'3.33.4'},
-  'new-york':{r:'États-Unis',c:'rgb(59 130 246)',v:'1.91.2'},
-  'north-pole':{r:'Arctique',c:'rgb(125 211 252)',v:'3.39'},
+  'moscow':{r:'Russia',c:'rgb(96 165 250)',v:'1.108'},
+  'new-orleans':{r:'United States',c:'rgb(168 85 247)',v:'3.33.4'},
+  'new-york':{r:'United States',c:'rgb(59 130 246)',v:'1.91.2'},
+  'north-pole':{r:'Arctic',c:'rgb(125 211 252)',v:'3.39'},
   'paris':{r:'France',c:'rgb(244 63 94)',v:'1.83'},
-  'rio':{r:'Brésil',c:'rgb(6 182 212)',v:'3.16.0'},
-  'san-francisco':{r:'États-Unis',c:'rgb(249 115 22)',v:'1.100'},
-  'sao-paulo':{r:'Brésil',c:'rgb(34 197 94)',v:'1.25'},
-  'seoul':{r:'Corée du Sud',c:'rgb(99 102 241)',v:'3.20'},
-  'singapore':{r:'Singapour',c:'rgb(45 212 191)',v:'1.57'},
+  'rio':{r:'Brazil',c:'rgb(6 182 212)',v:'3.16.0'},
+  'san-francisco':{r:'United States',c:'rgb(249 115 22)',v:'1.100'},
+  'sao-paulo':{r:'Brazil',c:'rgb(34 197 94)',v:'1.25'},
+  'seoul':{r:'South Korea',c:'rgb(99 102 241)',v:'3.20'},
+  'singapore':{r:'Singapore',c:'rgb(45 212 191)',v:'1.57'},
   'space-station':{r:'Orbital',c:'rgb(96 165 250)',v:'2.11'},
-  'st-petersburg':{r:'Russie',c:'rgb(129 140 248)',v:'2.10'},
-  'subway-city':{r:'Métropole',c:'rgb(56 189 248)',v:'2.37'},
-  'suzhou':{r:'Chine',c:'rgb(14 165 233)',v:'4.08.0'},
-  'tokyo':{r:'Japon',c:'rgb(168 85 247)',v:'3.17.1'},
-  'transylvania':{r:'Roumanie',c:'rgb(167 139 250)',v:'1.62'},
-  'underwater':{r:'Océan',c:'rgb(14 165 233)',v:'3.28'},
+  'st-petersburg':{r:'Russia',c:'rgb(129 140 248)',v:'2.10'},
+  'subway-city':{r:'Metropolis',c:'rgb(56 189 248)',v:'2.37'},
+  'suzhou':{r:'China',c:'rgb(14 165 233)',v:'4.08.0'},
+  'tokyo':{r:'Japan',c:'rgb(168 85 247)',v:'3.17.1'},
+  'transylvania':{r:'Romania',c:'rgb(167 139 250)',v:'1.62'},
+  'underwater':{r:'Ocean',c:'rgb(14 165 233)',v:'3.28'},
   'vancouver':{r:'Canada',c:'rgb(34 197 94)',v:'3.37.1'},
-  'venice':{r:'Italie',c:'rgb(251 113 133)',v:'1.99'},
-  'venice-beach':{r:'États-Unis',c:'rgb(236 72 153)',v:'1.88'},
-  'winter-holiday':{r:'Spécial',c:'rgb(56 189 248)',v:'1.112'},
-  'winter-wonderland':{r:'Autriche',c:'rgb(96 165 250)',v:'3.39'},
-  'wuhan':{r:'Chine',c:'rgb(239 68 68)',v:'3.36.1'},
-  'zurich':{r:'Suisse',c:'rgb(217 119 6)',v:'1.101'}
+  'venice':{r:'Italy',c:'rgb(251 113 133)',v:'1.99'},
+  'venice-beach':{r:'United States',c:'rgb(236 72 153)',v:'1.88'},
+  'winter-holiday':{r:'Special',c:'rgb(56 189 248)',v:'1.112'},
+  'winter-wonderland':{r:'Austria',c:'rgb(96 165 250)',v:'3.39'},
+  'wuhan':{r:'China',c:'rgb(239 68 68)',v:'3.36.1'},
+  'zurich':{r:'Switzerland',c:'rgb(217 119 6)',v:'1.101'}
   };
 
   var NOMS_SPECIAUX = {
@@ -753,7 +752,7 @@
 
       var btnFav = document.createElement("button");
       btnFav.className = "btn-fav" + (estFavori(slug) ? " actif" : "");
-      btnFav.setAttribute("aria-label", "Ajouter " + nomAffiche(slug) + " aux favoris");
+      btnFav.setAttribute("aria-label", "Add " + nomAffiche(slug) + " to favorites");
       btnFav.textContent = "★";
       btnFav.addEventListener("click", function (ev) {
         ev.preventDefault(); ev.stopPropagation();
@@ -774,7 +773,7 @@
     });
 
     grille.appendChild(frag);
-    $("compteur").innerHTML = "<b>" + slugs.length + "</b> cartes";
+    $("compteur").innerHTML = "<b>" + slugs.length + "</b> maps";
 
     /* filtres par région */
     var regions = [];
@@ -790,19 +789,19 @@
       document.querySelectorAll("#grille .carte").forEach(function (c) {
         var region = c.getAttribute("data-region");
         var slugCarte = (c.getAttribute("href") || "").replace("#jouer=", "");
-        var ok = r === "Toutes"
+        var ok = r === "All"
           || (r === "FAVS" && favs.indexOf(slugCarte) !== -1)
-          || (r !== "Toutes" && r !== "FAVS" && region === r);
+          || (r !== "All" && r !== "FAVS" && region === r);
         c.style.display = ok ? "" : "none";
         if (ok) visibles++;
       });
       $("vide").hidden = visibles > 0;
     };
-    var groupes = ["Toutes", "FAVS"].concat(regions);
+    var groupes = ["All", "FAVS"].concat(regions);
     groupes.forEach(function (r, ix) {
       var b = document.createElement("button");
       b.className = "filtre" + (ix === 0 ? " actif" : "");
-      b.textContent = r === "FAVS" ? "★ favoris" : r;
+      b.textContent = r === "FAVS" ? "★ favorites" : r;
       b.addEventListener("click", function () {
         document.querySelectorAll("#filtres .filtre").forEach(function (x) { x.classList.remove("actif"); });
         b.classList.add("actif");
@@ -1113,7 +1112,7 @@
     script.onload = function () {
       createUnityInstance($("unity-canvas"), {
         dataUrl: dossier + "reborn-shared.data.br?v=13",
-        frameworkUrl: dossier + "reborn-shared.framework.js.br?v=9",
+        frameworkUrl: dossier + "reborn-shared.framework.js.br?v=10",
         codeUrl: dossier + "reborn-shared.wasm.br",
         streamingAssetsUrl: "/builds/shared/" + info.buildId.replace("reborn-shared-", "") + "/StreamingAssets",
         companyName: "Reborn",
