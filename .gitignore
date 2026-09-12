@@ -7,3 +7,7 @@ raw/
 *.log
 __pycache__/
 *.pyc
+
+# secrets locaux — ne jamais publier
+cle_activation.json
+telechargement/maps.json

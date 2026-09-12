@@ -47,14 +47,21 @@ class Gestionnaire(BaseHTTPRequestHandler):
     def _cors(self):
         # une partie du code JS construit des URLs http://localhost:8907 en dur :
         # ouvertes depuis 127.0.0.1:8907 cela devient une requête origine croisée.
-        # Les POST partent avec credentials:include -> il faut refléter l'origine
-        # exacte (un joker "*" serait rejeté par le navigateur).
+        # On n'autorise QUE les origines locales : réfléchir n'importe quelle
+        # origine avec credentials laisserait n'importe quel site web lu dans le
+        # navigateur lire le cache et les jetons d'activation (localhost inclus).
         origine = self.headers.get("Origin") if hasattr(self, "headers") else None
-        self.send_header("Access-Control-Allow-Origin", origine or "*")
-        self.send_header("Access-Control-Allow-Credentials", "true")
-        self.send_header("Access-Control-Allow-Headers", "*")
-        self.send_header("Access-Control-Expose-Headers", "*")
+        if origine and re.fullmatch(r"https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?", origine):
+            self.send_header("Access-Control-Allow-Origin", origine)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Access-Control-Allow-Headers", "*")
+            self.send_header("Access-Control-Expose-Headers", "*")
         self.send_header("Vary", "Origin")
+
+    @staticmethod
+    def _chemin_sure(chemin):
+        """None si le chemin décodé contient des caractères de contrôle (CRLF…)."""
+        return chemin if chemin and all(ord(c) >= 0x20 for c in chemin) else None
 
     # ---------- local ----------
     def _chemin_local(self, chemin_net):
@@ -293,6 +300,8 @@ class Gestionnaire(BaseHTTPRequestHandler):
     def do_GET(self):
         partie = urlsplit(self.path)
         chemin = unquote(partie.path)
+        if self._chemin_sure(chemin) is None:
+            return self._repondre(400, "text/plain", b"400 chemin invalide")
         # routes de jeu (<carte>/reborn/<mode>) : toujours la coquille SPA locale,
         # AVANT la recherche de fichiers (sinon /x/reborn/enhanced tombe sur
         # enhanced.html — stub de redirection — et recharge la galerie)
@@ -338,11 +347,13 @@ class Gestionnaire(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             n = 0
+        n = max(0, min(n, 1 << 20))   # plafond : aucun POST légitime > 1 Mio
         self._corps = self.rfile.read(n) if n > 0 else b""
         self.close_connection = True
         self._proxy()
 
     def _rediriger(self, vers):
+        vers = "".join(c for c in vers if ord(c) >= 0x20)   # pas d'injection d'en-tête
         try:
             self.send_response(301)
             self.send_header("Location", vers)
