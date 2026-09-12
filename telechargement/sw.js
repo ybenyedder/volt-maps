@@ -65,6 +65,16 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
+  // Filet de sécurité : certains catalogues protégés contiennent encore
+  // l'ancien domaine CDN (ex. nocoin.webtvmedia.net, injoignable/mal configuré).
+  // Toute requête cross-origin visant /builds/ ou /reborn/content/ est rejouée
+  // en local — ces fichiers existent dans telechargement/ ou dans le cache.
+  if (request.method === 'GET' && url.origin !== self.location.origin
+      && (url.pathname.startsWith('/builds/') || url.pathname.startsWith('/reborn/content/'))) {
+    const locale = new URL(url.pathname + url.search, self.location.origin);
+    event.respondWith(fetch(new Request(locale.href, request)));
+    return;
+  }
   if (url.origin === self.location.origin && url.pathname === '/api/auth/session' && request.method === 'GET') {
     event.respondWith(appSessionResponse(request));
     return;
