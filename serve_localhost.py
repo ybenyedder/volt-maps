@@ -34,7 +34,9 @@ TYPE_SUP = {".webp": "image/webp", ".js": "text/javascript", ".css": "text/css",
 
 def _fichier_existant(chemin_relatif):
     p = os.path.normpath(os.path.join(RACINE, chemin_relatif.lstrip("/")))
-    return p if (p.startswith(RACINE) and os.path.isfile(p)) else None
+    if not (p == RACINE or p.startswith(RACINE + os.sep)):
+        return None
+    return p if os.path.isfile(p) else None
 
 class Gestionnaire(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -65,6 +67,15 @@ class Gestionnaire(BaseHTTPRequestHandler):
                     return p
         return None
 
+    @staticmethod
+    def _cache_control(chemin):
+        chemin = chemin.replace("\\", "/")
+        if "/game-assets/" in chemin:
+            return "public, max-age=2592000"          # vignettes : 30 j
+        if "/reborn/content/" in chemin or "/builds/" in chemin:
+            return "public, max-age=86400"            # contenu/builds : 24 h
+        return "no-cache"                             # html, api, json
+
     def _servir_fichier(self, chemin, code=200):
         with open(chemin, "rb") as f:
             corps = f.read()
@@ -74,7 +85,9 @@ class Gestionnaire(BaseHTTPRequestHandler):
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(corps)))
-            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Cache-Control", self._cache_control(chemin))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "DENY")
             self._cors()
             self.end_headers()
             if self.command != "HEAD":
@@ -110,7 +123,8 @@ class Gestionnaire(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(corps)))
-                self.send_header("X-Cache", "HIT")
+                self.send_header("Cache-Control", self._cache_control(cle))
+                self.send_header("X-Content-Type-Options", "nosniff")
                 self._cors()
                 self.end_headers()
                 if self.command != "HEAD":
@@ -252,9 +266,12 @@ class Gestionnaire(BaseHTTPRequestHandler):
 
     def _mettre_en_cache(self, cle, data, ctype):
         try:
-            with open(cle, "wb") as f:
+            chemin = os.path.abspath(cle)
+            if not chemin.startswith(CACHE + os.sep):
+                return
+            with open(chemin, "wb") as f:
                 f.write(data)
-            with open(cle + ".type", "w", encoding="ascii") as f:
+            with open(chemin + ".type", "w", encoding="ascii") as f:
                 f.write(ctype)
         except OSError:
             pass
