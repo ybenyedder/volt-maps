@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      if ((location.hostname === 'ss.tavvkkj.xyz' && location.pathname !== '/storage-export') || location.hostname === 'www.tavvkkj.xyz') {
+        location.replace('https://tavvkkj.xyz' + location.pathname + location.search + location.hash);
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050506" />
+    <meta name="color-scheme" content="dark" />
+    <title>Frequently asked questions — tavvkkj.xyz</title>
+    <meta name="description" content="Direct answers about maps, saves, browsers, Rank, privacy and contact." />
+    <link rel="canonical" href="/en/en/faq" />
+    <link rel="alternate" hreflang="pt-BR" href="/en/en/faq" />
+    <link rel="alternate" hreflang="en" href="/en/en/faq" />
+    <link rel="alternate" hreflang="fr" href="/en/en/fr/faq" />
+    <link rel="alternate" hreflang="zh-cn" href="/en/en/zh-cn/faq" />
+    <link rel="alternate" hreflang="x-default" href="/en/en/faq" />
+    <meta property="og:title" content="Frequently asked questions — tavvkkj.xyz" />
+    <meta property="og:description" content="Direct answers about maps, saves, browsers, Rank, privacy and contact." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.webp" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Frequently asked questions — tavvkkj.xyz" />
+    <meta name="twitter:description" content="Direct answers about maps, saves, browsers, Rank, privacy and contact." />
+    <link rel="icon" type="image/webp" sizes="256x256" href="/en/en/favicon.webp%3Fv=3" />
+    <link rel="apple-touch-icon" sizes="256x256" href="/en/en/favicon.webp%3Fv=3" />
+    <link rel="dns-prefetch" href="https://tavvkkj.github.io/" />
+    <link rel="preconnect" href="https://tavvkkj.github.io" crossorigin />
+    <style>
+      /* Enough to place the splash before boot-splash.css arrives. */
+      .boot-splash.boot-experience {
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        display: grid;
+        min-height: 100svh;
+        place-items: center;
+        padding: 24px;
+        overflow: hidden;
+        color: #f4f4f5;
+        background: #0a0a0b;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .boot-panel {
+        width: min(360px, 100%);
+      }
+    </style>
+
+    <script>
+      (function () {
+        'use strict';
+        var officialHost = 'ss.tavvkkj.xyz';
+        if (window.location.hostname.toLowerCase() === officialHost && window.location.protocol === 'http:') {
+          var secureUrl = new URL(window.location.href);
+          secureUrl.protocol = 'https:';
+          window.location.replace(secureUrl.href);
+          return;
+        }
+
+        document.addEventListener('contextmenu', function (e) {
+          const target = e.target;
+          if (
+            target.tagName === 'CANVAS' ||
+            target.tagName === 'IMG' ||
+            target.tagName === 'VIDEO' ||
+            target.closest('.game-page') ||
+            target.closest('.unity-stage') ||
+            target.closest('.map-thumb-shell')
+          ) {
+            e.preventDefault();
+            return false;
+          }
+        }, { capture: true, passive: false });
+        document.addEventListener('dragstart', function (e) {
+          if (e.target.tagName === 'IMG' || e.target.tagName === 'CANVAS') {
+            e.preventDefault();
+          }
+        }, { capture: true });
+        var _realFetch = window.fetch;
+        var _scrapeCount = 0;
+        var _scrapeTimer = 0;
+        window.fetch = function (url) {
+          var urlStr = String(url || '');
+          if (/^https:\/\/cdp\.cloud\.unity3d\.com\/v1\/events(?:[/?#]|$)/i.test(urlStr)) {
+            return Promise.resolve(new Response(null, { status: 204 }));
+          }
+          if (urlStr.startsWith('http') && !urlStr.includes(window.location.hostname)) {
+          } else {
+            _scrapeCount++;
+            clearTimeout(_scrapeTimer);
+            _scrapeTimer = setTimeout(function () { _scrapeCount = 0; }, 2000);
+            if (_scrapeCount > 40 && !document.hasFocus()) {
+              console.warn('[TRO] Rate limiting suspicious bulk fetch');
+              return new Promise(function (_, reject) {
+                setTimeout(function () { reject(new Error('Rate limited')); }, 2000);
+              });
+            }
+          }
+          return _realFetch.apply(this, arguments);
+        };
+        var ua = navigator.userAgent || '';
+        var blockedAgents = ['web2zip', 'HTTrack', 'wget', 'curl/', 'python-requests', 'scrapy', 'archiver'];
+        for (var i = 0; i < blockedAgents.length; i++) {
+          if (ua.toLowerCase().includes(blockedAgents[i].toLowerCase())) {
+            document.documentElement.innerHTML = '<body style="background:#000;color:#fff;font-family:monospace;padding:40px">Access denied.</body>';
+            throw new Error('Blocked');
+          }
+        }
+        document.addEventListener('keydown', function (e) {
+          if (document.body.classList.contains('is-game-route')) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) {
+              e.preventDefault();
+            }
+          }
+        }, { capture: true });
+        var _patchCanvas = function () {
+          var canvas = document.querySelector('.unity-stage canvas, .game-page canvas');
+          if (canvas) {
+            canvas.toDataURL = function () { return ''; };
+            canvas.toBlob = function (cb) { cb(null); };
+            canvas.captureStream = function () { return null; };
+          }
+        };
+        window.__troCanvasProtectionPatch = _patchCanvas;
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(_patchCanvas, 8000);
+          setTimeout(_patchCanvas, 16000);
+        });
+        Object.defineProperty(document, 'referrer', {
+          get: function () { return window.location.origin; },
+          configurable: true,
+        });
+      })();
+    </script>
+    <script type="module" crossorigin src="/en/en/assets/BjqKbfPm.js"></script>
+    <link rel="stylesheet" crossorigin href="/en/en/assets/Cf5HdjmP.css">
+      <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Frequently asked questions","description":"Direct answers about maps, saves, browsers, Rank, privacy and contact.","inLanguage":"en","url":"https://tavvkkj.xyz/en/faq","isPartOf":{"@type":"WebSite","name":"tavvkkj.xyz","url":"https://tavvkkj.xyz/"},"author":{"@type":"Person","name":"tavvkkj"}}</script>
+  </head>
+  <body>
+
+
+
+
+
+
+    <div class="boot-splash boot-experience" id="boot-splash" role="status" aria-live="polite" style="--boot-progress: 6">
+      <main class="boot-panel">
+        <span class="boot-logo"><img src="/en/en/logo.webp" alt="" width="40" height="40" /></span>
+        <section class="boot-narrative" id="boot-splash-copy">
+          <h1 id="boot-splash-title">Preparando o portal</h1>
+          <p id="boot-splash-status">Carregando os recursos essenciais da interface.</p>
+        </section>
+        <div
+          class="boot-track-line"
+          id="boot-splash-progress"
+          role="progressbar"
+          aria-label="Progresso inicial"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="6"
+        ><span class="boot-track-value"></span></div>
+      </main>
+    </div>
+    <div id="root"><main class="public-document public-document-static" id="main-content">
+    <header class="public-document-hero">
+      <div class="public-document-meta"><span>Public document</span><span>Updated July 29, 2026</span></div>
+      <span class="public-document-eyebrow">Common questions</span>
+      <h1>Frequently asked questions</h1>
+      <p>Direct answers about maps, saves, browsers, Rank, privacy and contact.</p>
+    </header>
+    <article class="public-document-sections">
+    <section id="section-1">
+      <span>01</span>
+      <h2>Do I need an account?</h2>
+      <p>Not to open public maps. Discord may be required for identity features, run submission and profile management.</p>
+    </section>
+    <section id="section-2">
+      <span>02</span>
+      <h2>Where is progress stored?</h2>
+      <p>Usually in the browser storage used to open the map. Clearing site data or changing devices can remove unexported saves.</p>
+    </section>
+    <section id="section-3">
+      <span>03</span>
+      <h2>Which browsers work?</h2>
+      <p>Modern browsers with WebGL and WebAssembly generally work best. Memory, GPU, network blocks and build compatibility also matter.</p>
+    </section>
+    <section id="section-4">
+      <span>04</span>
+      <h2>Are there ads?</h2>
+      <p>Yes. The site displays fixed banners at the top of public pages and a short step before opening each map. No ad is started during gameplay.</p>
+    </section>
+    <section id="section-5">
+      <span>05</span>
+      <h2>Is the project official?</h2>
+      <p>No. It is an independent community project; see the legal notice for trademark and affiliation details.</p>
+    </section>
+    <section id="section-6">
+      <span>06</span>
+      <h2>How do I request help or removal?</h2>
+      <p>Contact tavvkkj on Discord with the URL, a clear description and the relevant supporting information.</p>
+    </section></article>
+  </main></div>
+    <script>
+      (function () {
+        var retryingModule = false;
+        window.addEventListener('error', function (event) {
+          var failed = event.target;
+          if (
+            retryingModule ||
+            !(failed instanceof HTMLScriptElement) ||
+            failed.type !== 'module' ||
+            !failed.src.includes('/assets/')
+          ) return;
+
+          retryingModule = true;
+          var retry = document.createElement('script');
+          var retryUrl = new URL(failed.src);
+          retryUrl.searchParams.set('moduleRecovery', Date.now().toString(36));
+          retry.type = 'module';
+          retry.crossOrigin = 'anonymous';
+          retry.src = retryUrl.href;
+          retry.onload = function () {
+            try { sessionStorage.removeItem('tavvkkj.module-recovery-attempts'); } catch {}
+          };
+          retry.onerror = function () {
+            var attempts = 0;
+            try {
+              attempts = Number(sessionStorage.getItem('tavvkkj.module-recovery-attempts')) || 0;
+              sessionStorage.setItem('tavvkkj.module-recovery-attempts', String(attempts + 1));
+            } catch {}
+            if (attempts >= 2) return;
+            window.setTimeout(function () {
+              var page = new URL(window.location.href);
+              page.searchParams.set('moduleRecovery', Date.now().toString(36));
+              window.location.replace(page.href);
+            }, 1800);
+          };
+          document.head.appendChild(retry);
+        }, true);
+      })();
+    </script>
+  </body>
+</html>

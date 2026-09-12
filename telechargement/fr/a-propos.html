@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <script>
+      if ((location.hostname === 'ss.tavvkkj.xyz' && location.pathname !== '/storage-export') || location.hostname === 'www.tavvkkj.xyz') {
+        location.replace('https://tavvkkj.xyz' + location.pathname + location.search + location.hash);
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050506" />
+    <meta name="color-scheme" content="dark" />
+    <title>À propos de tavvkkj.xyz — tavvkkj.xyz</title>
+    <meta name="description" content="Une bibliothèque indépendante de cartes, expériences WebGL, outils d’entraînement et records communautaires." />
+    <link rel="canonical" href="/fr/fr/a-propos" />
+    <link rel="alternate" hreflang="pt-BR" href="/fr/fr/sobre" />
+    <link rel="alternate" hreflang="en" href="/fr/fr/en/about" />
+    <link rel="alternate" hreflang="fr" href="/fr/fr/a-propos" />
+    <link rel="alternate" hreflang="zh-cn" href="/fr/fr/zh-cn/about" />
+    <link rel="alternate" hreflang="x-default" href="/fr/fr/sobre" />
+    <meta property="og:title" content="À propos de tavvkkj.xyz — tavvkkj.xyz" />
+    <meta property="og:description" content="Une bibliothèque indépendante de cartes, expériences WebGL, outils d’entraînement et records communautaires." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.webp" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="À propos de tavvkkj.xyz — tavvkkj.xyz" />
+    <meta name="twitter:description" content="Une bibliothèque indépendante de cartes, expériences WebGL, outils d’entraînement et records communautaires." />
+    <link rel="icon" type="image/webp" sizes="256x256" href="/fr/fr/favicon.webp%3Fv=3" />
+    <link rel="apple-touch-icon" sizes="256x256" href="/fr/fr/favicon.webp%3Fv=3" />
+    <link rel="dns-prefetch" href="https://tavvkkj.github.io/" />
+    <link rel="preconnect" href="https://tavvkkj.github.io" crossorigin />
+    <style>
+      /* Enough to place the splash before boot-splash.css arrives. */
+      .boot-splash.boot-experience {
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        display: grid;
+        min-height: 100svh;
+        place-items: center;
+        padding: 24px;
+        overflow: hidden;
+        color: #f4f4f5;
+        background: #0a0a0b;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .boot-panel {
+        width: min(360px, 100%);
+      }
+    </style>
+
+    <script>
+      (function () {
+        'use strict';
+        var officialHost = 'ss.tavvkkj.xyz';
+        if (window.location.hostname.toLowerCase() === officialHost && window.location.protocol === 'http:') {
+          var secureUrl = new URL(window.location.href);
+          secureUrl.protocol = 'https:';
+          window.location.replace(secureUrl.href);
+          return;
+        }
+
+        document.addEventListener('contextmenu', function (e) {
+          const target = e.target;
+          if (
+            target.tagName === 'CANVAS' ||
+            target.tagName === 'IMG' ||
+            target.tagName === 'VIDEO' ||
+            target.closest('.game-page') ||
+            target.closest('.unity-stage') ||
+            target.closest('.map-thumb-shell')
+          ) {
+            e.preventDefault();
+            return false;
+          }
+        }, { capture: true, passive: false });
+        document.addEventListener('dragstart', function (e) {
+          if (e.target.tagName === 'IMG' || e.target.tagName === 'CANVAS') {
+            e.preventDefault();
+          }
+        }, { capture: true });
+        var _realFetch = window.fetch;
+        var _scrapeCount = 0;
+        var _scrapeTimer = 0;
+        window.fetch = function (url) {
+          var urlStr = String(url || '');
+          if (/^https:\/\/cdp\.cloud\.unity3d\.com\/v1\/events(?:[/?#]|$)/i.test(urlStr)) {
+            return Promise.resolve(new Response(null, { status: 204 }));
+          }
+          if (urlStr.startsWith('http') && !urlStr.includes(window.location.hostname)) {
+          } else {
+            _scrapeCount++;
+            clearTimeout(_scrapeTimer);
+            _scrapeTimer = setTimeout(function () { _scrapeCount = 0; }, 2000);
+            if (_scrapeCount > 40 && !document.hasFocus()) {
+              console.warn('[TRO] Rate limiting suspicious bulk fetch');
+              return new Promise(function (_, reject) {
+                setTimeout(function () { reject(new Error('Rate limited')); }, 2000);
+              });
+            }
+          }
+          return _realFetch.apply(this, arguments);
+        };
+        var ua = navigator.userAgent || '';
+        var blockedAgents = ['web2zip', 'HTTrack', 'wget', 'curl/', 'python-requests', 'scrapy', 'archiver'];
+        for (var i = 0; i < blockedAgents.length; i++) {
+          if (ua.toLowerCase().includes(blockedAgents[i].toLowerCase())) {
+            document.documentElement.innerHTML = '<body style="background:#000;color:#fff;font-family:monospace;padding:40px">Access denied.</body>';
+            throw new Error('Blocked');
+          }
+        }
+        document.addEventListener('keydown', function (e) {
+          if (document.body.classList.contains('is-game-route')) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) {
+              e.preventDefault();
+            }
+          }
+        }, { capture: true });
+        var _patchCanvas = function () {
+          var canvas = document.querySelector('.unity-stage canvas, .game-page canvas');
+          if (canvas) {
+            canvas.toDataURL = function () { return ''; };
+            canvas.toBlob = function (cb) { cb(null); };
+            canvas.captureStream = function () { return null; };
+          }
+        };
+        window.__troCanvasProtectionPatch = _patchCanvas;
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(_patchCanvas, 8000);
+          setTimeout(_patchCanvas, 16000);
+        });
+        Object.defineProperty(document, 'referrer', {
+          get: function () { return window.location.origin; },
+          configurable: true,
+        });
+      })();
+    </script>
+    <script type="module" crossorigin src="/fr/fr/assets/BjqKbfPm.js"></script>
+    <link rel="stylesheet" crossorigin href="/fr/fr/assets/Cf5HdjmP.css">
+      <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"À propos de tavvkkj.xyz","description":"Une bibliothèque indépendante de cartes, expériences WebGL, outils d’entraînement et records communautaires.","inLanguage":"fr","url":"https://tavvkkj.xyz/fr/a-propos","isPartOf":{"@type":"WebSite","name":"tavvkkj.xyz","url":"https://tavvkkj.xyz/"},"author":{"@type":"Person","name":"tavvkkj"}}</script>
+  </head>
+  <body>
+
+
+
+
+
+
+    <div class="boot-splash boot-experience" id="boot-splash" role="status" aria-live="polite" style="--boot-progress: 6">
+      <main class="boot-panel">
+        <span class="boot-logo"><img src="/fr/fr/logo.webp" alt="" width="40" height="40" /></span>
+        <section class="boot-narrative" id="boot-splash-copy">
+          <h1 id="boot-splash-title">Preparando o portal</h1>
+          <p id="boot-splash-status">Carregando os recursos essenciais da interface.</p>
+        </section>
+        <div
+          class="boot-track-line"
+          id="boot-splash-progress"
+          role="progressbar"
+          aria-label="Progresso inicial"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="6"
+        ><span class="boot-track-value"></span></div>
+      </main>
+    </div>
+    <div id="root"><main class="public-document public-document-static" id="main-content">
+    <header class="public-document-hero">
+      <div class="public-document-meta"><span>Document public</span><span>Mis à jour le 29 juillet 2026</span></div>
+      <span class="public-document-eyebrow">Projet communautaire</span>
+      <h1>À propos de tavvkkj.xyz</h1>
+      <p>Une bibliothèque indépendante de cartes, expériences WebGL, outils d’entraînement et records communautaires.</p>
+    </header>
+    <article class="public-document-sections">
+    <section id="section-1">
+      <span>01</span>
+      <h2>Le projet</h2>
+      <p>tavvkkj.xyz organise des versions WebGL historiques, des cartes, des modes d’entraînement et des ressources techniques. Le site est maintenu indépendamment par tavvkkj et ne constitue pas une publication officielle.</p>
+    </section>
+    <section id="section-2">
+      <span>02</span>
+      <h2>Pourquoi il existe</h2>
+      <p>Les anciennes expériences de navigateur peuvent disparaître lorsque les services ou pages d’origine sont arrêtés. Le projet documente leur fonctionnement et leurs différences.</p>
+    </section>
+    <section id="section-3">
+      <span>03</span>
+      <h2>Ce que nous développons</h2>
+      <p>Nous préservons des versions, documentons la compatibilité, maintenons les outils d’entraînement et organisons les règles du classement.</p>
+    </section>
+    <section id="section-4">
+      <span>04</span>
+      <h2>Créateur</h2>
+      <p>tavvkkj maintient le projet, restaure les cartes et développe l’expérience web. Les profils TikTok officiels sont indiqués ci-dessous.</p>
+    </section></article>
+  </main></div>
+    <script>
+      (function () {
+        var retryingModule = false;
+        window.addEventListener('error', function (event) {
+          var failed = event.target;
+          if (
+            retryingModule ||
+            !(failed instanceof HTMLScriptElement) ||
+            failed.type !== 'module' ||
+            !failed.src.includes('/assets/')
+          ) return;
+
+          retryingModule = true;
+          var retry = document.createElement('script');
+          var retryUrl = new URL(failed.src);
+          retryUrl.searchParams.set('moduleRecovery', Date.now().toString(36));
+          retry.type = 'module';
+          retry.crossOrigin = 'anonymous';
+          retry.src = retryUrl.href;
+          retry.onload = function () {
+            try { sessionStorage.removeItem('tavvkkj.module-recovery-attempts'); } catch {}
+          };
+          retry.onerror = function () {
+            var attempts = 0;
+            try {
+              attempts = Number(sessionStorage.getItem('tavvkkj.module-recovery-attempts')) || 0;
+              sessionStorage.setItem('tavvkkj.module-recovery-attempts', String(attempts + 1));
+            } catch {}
+            if (attempts >= 2) return;
+            window.setTimeout(function () {
+              var page = new URL(window.location.href);
+              page.searchParams.set('moduleRecovery', Date.now().toString(36));
+              window.location.replace(page.href);
+            }, 1800);
+          };
+          document.head.appendChild(retry);
+        }, true);
+      })();
+    </script>
+  </body>
+</html>

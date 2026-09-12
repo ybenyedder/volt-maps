@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volt Maps · miroir hors ligne</title>
+<meta name="description" content="Volt Maps — miroir open source du player WebGL Reborn. 100 % local, aucune donnée collectée.">
+<link rel="icon" href="/favicon.webp?v=3">
+<style>
+  /* ——— Volt Maps · thème « cartouche arcade » — fond encre, accent ambre, typographie pressée ——— */
+  :root {
+    --bg: #0a0c11;
+    --bg2: #0d1017;
+    --panel: #12161f;
+    --panel2: #171c28;
+    --line: #232939;
+    --line2: #303850;
+    --txt: #edf0f7;
+    --mut: #97a0b4;
+    --dim: #59617668;
+    --amber: #ffb020;
+    --orange: #ff6a3d;
+    --green: #46d17e;
+    --cyan: #45c8d6;
+    --rayon: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; color: var(--txt);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    background:
+      radial-gradient(circle at 1px 1px, #161b26 1px, transparent 1.6px) 0 0 / 26px 26px,
+      var(--bg);
+    background-attachment: fixed;
+  }
+  button { font: inherit; cursor: pointer; }
+  a { color: inherit; }
+  ::selection { background: var(--amber); color: #10120a; }
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: #2a3145; border: 2px solid var(--bg2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4360; }
+
+  .etiquette {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
+  }
+
+  /* ————————————— barre supérieure ————————————— */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 0 clamp(16px, 4vw, 44px);
+    height: 64px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--line);
+  }
+  .wordmark { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .wordmark .bloc {
+    background: var(--amber); color: #141005;
+    font-weight: 900; font-size: 17px; letter-spacing: .5px;
+    padding: 5px 9px; border-radius: 4px;
+  }
+  .wordmark .suite { font-weight: 800; font-size: 17px; letter-spacing: 3px; color: var(--txt); }
+  .wordmark small { display: block; font-size: 9.5px; letter-spacing: 2.2px; color: var(--mut); text-transform: uppercase; margin-top: 1px; }
+  .drapeaux { display: flex; gap: 8px; flex-wrap: wrap; }
+  .drapeau {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 3px; border: 1px solid;
+  }
+  .drapeau.os   { color: var(--green); border-color: rgba(70, 209, 126, .45); background: rgba(70, 209, 126, .07); }
+  .drapeau.loc  { color: var(--amber); border-color: rgba(255, 176, 32, .45); background: rgba(255, 176, 32, .07); }
+  .drapeau.priv { color: var(--cyan);  border-color: rgba(69, 200, 214, .4);  background: rgba(69, 200, 214, .06); }
+  .zone-recherche { margin-left: auto; position: relative; }
+  .zone-recherche svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--mut); pointer-events: none;
+  }
+  #recherche {
+    width: clamp(170px, 24vw, 320px); padding: 9px 40px 9px 36px;
+    background: #0b0e15; border: 1px solid var(--line2); border-radius: 6px;
+    color: var(--txt); outline: none; font-size: 13.5px;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    transition: border-color .15s;
+  }
+  #recherche::placeholder { color: #59617668; }
+  #recherche:focus { border-color: var(--amber); }
+  .zone-recherche .kbd {
+    position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+    font-family: ui-monospace, Consolas, monospace; font-size: 10.5px;
+    color: var(--mut); border: 1px solid var(--line2); border-radius: 3px; padding: 1px 6px;
+  }
+  #compteur { color: var(--mut); font-size: 12px; font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+  #compteur b { color: var(--amber); font-size: 14px; }
+
+  /* ————————————— bandeau défilant ————————————— */
+  .ticker {
+    overflow: hidden; background: var(--bg2);
+    border-bottom: 1px solid var(--line);
+    display: none;
+  }
+  @media (min-width: 720px) { .ticker { display: block; } }
+  .ticker-inner {
+    display: flex; width: max-content;
+    animation: defile 36s linear infinite;
+  }
+  .ticker-seq { display: flex; }
+  .ticker-seq span {
+    padding: 7px 0 7px 42px;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 10.5px; letter-spacing: 2.4px; text-transform: uppercase;
+    color: rgba(255, 176, 32, .82); white-space: nowrap;
+  }
+  .ticker-seq span i { font-style: normal; color: var(--dim); padding-right: 42px; }
+  @keyframes defile { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .ticker-inner { animation: none; } }
+
+  /* ————————————— galerie ————————————— */
+  main { padding: 26px clamp(16px, 4vw, 44px) 70px; max-width: 1620px; margin: 0 auto; }
+  .tete-grille {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    margin: 6px 2px 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .tete-grille h2 {
+    margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 2.6px; text-transform: uppercase;
+  }
+  .tete-grille h2 em { font-style: normal; color: var(--amber); }
+  .tete-grille .aide { margin-left: auto; display: flex; gap: 14px; color: var(--mut); font-size: 11.5px; }
+  .aide kbd {
+    font-family: ui-monospace, Consolas, monospace; font-size: 10px;
+    border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 3px; padding: 1px 5px; color: var(--txt);
+  }
+  #grille {
+    display: grid; gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+    counter-reset: carte;
+  }
+  .carte {
+    position: relative; counter-increment: carte;
+    border-radius: var(--rayon); overflow: hidden;
+    background: var(--panel); border: 1px solid var(--line);
+    text-decoration: none; color: inherit; display: block;
+    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+  .carte:hover, .carte:focus-visible {
+    transform: translateY(-4px);
+    border-color: rgba(255, 176, 32, .6);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .5), 0 0 0 3px rgba(255, 176, 32, .1);
+    outline: none;
+  }
+  .carte::after {
+    content: counter(carte, decimal-leading-zero);
+    position: absolute; top: 8px; left: 10px; z-index: 4;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px; font-weight: 700;
+    color: rgba(255, 255, 255, .92);
+    background: rgba(8, 10, 15, .72); border: 1px solid rgba(255, 255, 255, .14);
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .vignette { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #080a0f; }
+  .vignette img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block; opacity: 0;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .vignette img.charge { opacity: 1; }
+  .carte:hover .vignette img.charge { transform: scale(1.05); }
+  .replace-vignette {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 42px; font-weight: 900; color: rgba(255, 255, 255, .9);
+    letter-spacing: 2px;
+  }
+  .scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(5, 7, 12, .92) 0%, rgba(5, 7, 12, .3) 46%, transparent 72%);
+  }
+  .nom {
+    position: absolute; left: 13px; right: 13px; bottom: 10px; z-index: 3;
+    font-weight: 800; font-size: 15px; letter-spacing: .2px;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .8);
+  }
+  .nom .region {
+    display: inline-block; margin-left: 7px; vertical-align: 1px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    color: rgba(255, 255, 255, .8);
+    border: 1px solid rgba(255, 255, 255, .24); border-radius: 3px; padding: 1px 6px;
+  }
+  .nom .version {
+    display: inline-block; margin-left: 6px; vertical-align: 1px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, .6);
+  }
+  .puce-fps {
+    position: absolute; top: 8px; right: 10px; z-index: 4;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 10.5px; font-weight: 700;
+    background: rgba(8, 10, 15, .72); border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 4px; padding: 2px 7px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .puce-fps i { width: 6px; height: 6px; border-radius: 50%; }
+  .btn-fav {
+    position: absolute; top: 8px; right: 10px; z-index: 5;
+    width: 28px; height: 28px; border-radius: 4px;
+    background: rgba(8, 10, 15, .72); border: 1px solid rgba(255, 255, 255, .18);
+    color: #9aa3b8; font-size: 15px; line-height: 1;
+    display: grid; place-items: center;
+    transition: color .14s, border-color .14s, transform .14s;
+  }
+  .btn-fav:hover { transform: scale(1.12); }
+  .btn-fav.actif { color: var(--amber); border-color: rgba(255, 176, 32, .6); }
+  .btn-jouer {
+    position: absolute; inset: 0; margin: auto; width: 58px; height: 58px;
+    border-radius: 8px; border: none; display: grid; place-items: center;
+    background: var(--amber); color: #141005; font-size: 22px; font-weight: 900;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .55);
+    opacity: 0; transform: scale(.85); transition: opacity .16s, transform .16s;
+  }
+  .carte:hover .btn-jouer, .carte:focus-visible .btn-jouer { opacity: 1; transform: scale(1); }
+  .btn-jouer:active { transform: scale(.94); }
+  #vide { text-align: center; color: var(--mut); padding: 70px 0; font-size: 15px; }
+  #filtres { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 2px 20px; }
+  .filtre {
+    background: var(--panel); border: 1px solid var(--line2); color: var(--mut);
+    font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 7px 14px; border-radius: 999px; transition: all .14s;
+  }
+  .filtre:hover { border-color: var(--amber); color: var(--txt); }
+  .filtre.actif { background: var(--amber); border-color: var(--amber); color: #141005; }
+
+  footer {
+    border-top: 1px solid var(--line); background: var(--bg2);
+    padding: 34px clamp(16px, 4vw, 44px) 44px;
+  }
+  .cols {
+    max-width: 1620px; margin: 0 auto;
+    display: grid; gap: 30px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+  .cols h3 {
+    margin: 0 0 10px; font-size: 10.5px; font-weight: 800;
+    letter-spacing: 2.2px; text-transform: uppercase; color: var(--amber);
+  }
+  .cols p { margin: 0 0 8px; color: var(--mut); font-size: 13px; line-height: 1.65; }
+  .cols code {
+    font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+    color: var(--txt); background: var(--panel); border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 4px;
+  }
+  .lien-don {
+    display: inline-block; margin-top: 6px;
+    background: var(--amber); color: #141005; text-decoration: none;
+    font-weight: 800; font-size: 13px; padding: 9px 16px; border-radius: 6px;
+    transition: filter .15s;
+  }
+  .lien-don:hover { filter: brightness(1.12); }
+  .bas {
+    max-width: 1620px; margin: 30px auto 0; padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex; gap: 14px; flex-wrap: wrap; justify-content: space-between;
+    color: #596176; font-size: 11.5px;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+
+  /* ————————————— vue jeu ————————————— */
+  #vue-jeu { position: fixed; inset: 0; z-index: 50; background: #000; }
+  #unity-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #000; }
+  #chargement {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; background: var(--bg);
+    background-image: radial-gradient(circle at 1px 1px, #161b26 1px, transparent 1.6px);
+    background-size: 26px 26px;
+    transition: opacity .45s ease; text-align: center; padding: 20px;
+  }
+  #chargement.parti { opacity: 0; pointer-events: none; }
+  #titre-chargement { font-size: clamp(22px, 4vw, 34px); font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; }
+  .piste { width: min(380px, 72vw); height: 6px; border-radius: 3px; background: #1b2130; overflow: hidden; border: 1px solid var(--line); }
+  #barre { height: 100%; width: 0%; background: var(--amber); transition: width .25s ease; }
+  #statut {
+    color: var(--mut); font-size: 12px; min-height: 20px; letter-spacing: 1.8px; text-transform: uppercase;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  #erreur {
+    position: absolute; z-index: 40; inset: 0;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    background: rgba(4, 6, 10, .82);
+  }
+  #erreur[hidden] { display: none; }
+  .panneau-erreur {
+    max-width: 640px; width: 100%;
+    background: var(--panel); border: 1px solid rgba(255, 106, 61, .45);
+    border-radius: var(--rayon); padding: 26px 28px;
+  }
+  .panneau-erreur h2 { margin: 0 0 8px; font-size: 18px; }
+  .panneau-erreur p { color: var(--mut); font-size: 14px; margin: 0 0 14px; line-height: 1.55; }
+  #journal {
+    max-height: 150px; overflow: auto; font-size: 12px; line-height: 1.5;
+    background: #0a0c12; border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; color: #c7cede; white-space: pre-wrap; word-break: break-word;
+    font-family: ui-monospace, Consolas, monospace;
+    margin: 0 0 18px;
+  }
+  .rang-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 18px; border-radius: 6px; border: 1px solid transparent;
+    font-weight: 700; font-size: 13.5px;
+  }
+  .btn-primaire { background: var(--amber); color: #141005; }
+  .btn-secondaire { background: transparent; color: var(--txt); border-color: var(--line2); }
+  .btn-secondaire:hover { border-color: var(--amber); }
+
+  /* ————————————— modale des modes ————————————— */
+  #modale {
+    position: fixed; inset: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(4, 6, 10, .7);
+  }
+  #modale[hidden] { display: none; }
+  .feuille {
+    width: min(430px, 92vw);
+    background: var(--panel); border: 1px solid var(--line2); border-radius: var(--rayon);
+    padding: 24px 26px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+  }
+  .feuille h3 { margin: 0 0 4px; font-size: 20px; letter-spacing: .3px; }
+  .feuille .sous { color: var(--mut); font-size: 12.5px; margin: 0 0 18px; }
+  .choix {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 16px; margin-bottom: 10px;
+    border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel2); color: var(--txt); text-decoration: none;
+    transition: border-color .15s, transform .15s, background .15s;
+  }
+  .choix:hover { border-color: var(--amber); background: rgba(255, 176, 32, .07); transform: translateX(3px); }
+  .choix .ico {
+    width: 38px; height: 38px; border-radius: 6px; flex: none;
+    display: grid; place-items: center;
+    background: var(--amber); color: #141005;
+    font-weight: 900; font-size: 15px; font-family: ui-monospace, Consolas, monospace;
+  }
+  .choix .t { font-weight: 800; font-size: 15px; }
+  .choix .d { color: var(--mut); font-size: 12.5px; margin-top: 2px; line-height: 1.45; }
+  .choix.indisponible { opacity: .45; pointer-events: none; }
+  .choix .badge-indispo {
+    margin-left: auto; flex: none; font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: #f87171;
+    border: 1px solid rgba(248, 113, 113, .4); border-radius: 3px; padding: 2px 7px;
+  }
+  .rang-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+  @media (max-width: 640px) {
+    header { height: auto; padding-block: 12px; }
+    .zone-recherche { margin-left: 0; order: 3; width: 100%; }
+    #recherche { width: 100%; }
+    .drapeaux { order: 2; }
+  }
+</style>
+<script>
+  /* ---------- garde-fou hostname : le jeu n'accepte que « localhost » ---------- */
+  (function () {
+    if (location.hostname === "127.0.0.1") {
+      location.replace(location.href.replace("//127.0.0.1", "//localhost"));
+    }
+  })();
+
+  /* ---------- service worker « tro » (clés de contenu + cache des cartes) ----------
+     On purge uniquement les service workers étrangers (anciens patchs), puis on
+     enregistre /sw.js : il détient la clé de déchiffrement du contenu protégé et
+     sert les bundles depuis son cache. Ne PAS vider Cache Storage ici ! */
+  var pretSW = Promise.resolve(null);
+  var swActif = null;
+  if (navigator.serviceWorker && navigator.serviceWorker.register) {
+    pretSW = navigator.serviceWorker.getRegistrations().then(function (rs) {
+      var etrangers = rs.filter(function (r) {
+        var u = (r.active && r.active.scriptURL) || "";
+        return u.indexOf("/sw.js") === -1;
+      }).map(function (r) { return r.unregister(); });
+      return Promise.all(etrangers);
+    }).then(function () {
+      return navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    }).then(function () {
+      return navigator.serviceWorker.ready;
+    }).then(function (reg) {
+      swActif = reg.active || navigator.serviceWorker.controller;
+      return swActif;
+    }).catch(function (e) {
+      console.log("[launch] service worker indisponible : " + e);
+      return null;
+    });
+  }
+
+  function messageSW(sw, message) {
+    return new Promise(function (res, rej) {
+      var canal = new MessageChannel();
+      var t = setTimeout(function () { rej(new Error("delai_depassee")); }, 8000);
+      canal.port1.onmessage = function (ev) {
+        clearTimeout(t);
+        if (ev.data && ev.data.ok) res(ev.data.payload || true);
+        else rej(new Error(String((ev.data && ev.data.error) || "rejete").slice(0, 80)));
+      };
+      sw.postMessage(message, [canal.port2]);
+    });
+  }
+
+  /* ---------- réécriture des URLs amont vers le serveur local ---------- */
+  (function () {
+    var LOCAL = location.origin;
+    var CARTES_URLS = [
+      ["https://assets.tavvkkj.xyz/", LOCAL + "/"],
+      ["https://reborn.tavvkkj.xyz/", LOCAL + "/reborn-api/"],
+      ["https://tavvkkj.xyz/", LOCAL + "/"]
+    ];
+    function reecrire(u) {
+      if (typeof u !== "string" || u.indexOf("tavvkkj.xyz") === -1) return u;
+      for (var i = 0; i < CARTES_URLS.length; i++)
+        if (u.indexOf(CARTES_URLS[i][0]) === 0)
+          return CARTES_URLS[i][1] + u.slice(CARTES_URLS[i][0].length);
+      return u;
+    }
+    /* le bouton du popup (« faire une donation ») ouvre tavvkkj.xyz via le
+       moteur : on redirige vers la page de donation */
+    var openNatif = window.open.bind(window);
+    window.open = function (url, cible, options) {
+      if (typeof url === "string" && url.indexOf("tavvkkj.xyz") !== -1)
+        url = "https://paypal.me/AdamMezerai";
+      return openNatif(url, cible, options);
+    };
+    var fetchNatif = window.fetch;
+    if (fetchNatif) window.fetch = function (entree, init) {
+      try {
+        if (typeof entree === "string") entree = reecrire(entree);
+        else if (entree && entree.url) entree = new Request(reecrire(entree.url), entree);
+      } catch (e) {}
+      return fetchNatif.call(this, entree, init);
+    };
+    var openNatif = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function () {
+      var args = Array.prototype.slice.call(arguments);
+      args[1] = reecrire(args[1]);
+      return openNatif.apply(this, args);
+    };
+  })();
+</script>
+</head>
+<body>
+
+<!-- ==================== GALERIE ==================== -->
+<div id="vue-galerie">
+  <header>
+    <a class="wordmark" href="/">
+      <span class="bloc">VOLT</span>
+      <span class="suite">MAPS</span>
+    </a>
+    <div class="zone-recherche">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>
+      </svg>
+      <input id="recherche" type="search" placeholder="rechercher une carte…" autocomplete="off">
+    </div>
+    <span id="compteur" style="display:none"></span>
+  </header>
+
+  <main>
+    <div class="tete-grille">
+      <h2>Bibliothèque <em>— toutes les cartes</em></h2>
+      <div class="aide">
+        <span><kbd>/</kbd> rechercher</span>
+        <span><kbd>échap</kbd> quitter une partie</span>
+      </div>
+    </div>
+    <div id="filtres"></div>
+    <div id="grille"></div>
+    <div id="vide" hidden>Aucune carte ne correspond à cette recherche.</div>
+  </main>
+
+  <footer>
+    <div class="cols">
+      <div>
+        <h3>Projet open source</h3>
+        <p>Volt Maps est un miroir communautaire du player WebGL Reborn.
+           Aucun compte, aucun traceur, aucune donnée collectée : tout tourne
+           sur ta machine, déconnecté du réseau.</p>
+        <p>Les cartes proviennent du contenu officiel et restent la propriété
+           de leurs auteurs respectifs.</p>
+      </div>
+      <div>
+        <h3>Soutenir</h3>
+        <p>Le miroir est gratuit et le restera. Si le projet te sert,
+           une donation aide à le garder en vie.</p>
+        <a class="lien-don" href="https://paypal.me/AdamMezerai" target="_blank" rel="noopener">Faire un don — paypal.me/AdamMezerai</a>
+      </div>
+      <div>
+        <h3>Technique</h3>
+        <p>Player <code>reborn-shared-enhanced-local</code> · service worker de
+           déchiffrement · cache disque persistant · activation signée localement.</p>
+        <p>Modes jouables : <b>Enhanced</b> (build unifié) et <b>Training</b>.</p>
+      </div>
+    </div>
+    <div class="bas">
+      <span>à usage strictement personnel — ne pas héberger en ligne</span>
+      <span>contenu du jeu © SYBO Games · miroir made by volt</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ==================== MODALE : CHOIX DU MODE ==================== -->
+<div id="modale" hidden>
+  <div class="feuille">
+    <h3 id="modale-nom">Carte</h3>
+    <p class="sous">Choisis la version à lancer — chaque mode a sa propre URL.</p>
+    <a class="choix" id="choix-enhanced" href="#">
+      <span class="ico">E+</span>
+      <span><span class="t">Enhanced</span>
+      <div class="d">L'édition améliorée — le jeu complet, comme sur le site d'origine.</div></span>
+    </a>
+    <a class="choix" id="choix-training" href="#">
+      <span class="ico">T</span>
+      <span><span class="t">Training</span>
+      <div class="d">Mode entraînement : idéal pour apprendre les tracés et les tricks.</div></span>
+    </a>
+    <div class="rang-actions">
+      <button class="btn btn-secondaire" id="modale-fermer">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JEU ==================== -->
+<div id="vue-jeu" hidden>
+  <canvas id="unity-canvas"></canvas>
+
+  <div id="chargement">
+    <div class="titre" id="titre-chargement">Chargement…</div>
+    <div class="piste"><div id="barre"></div></div>
+    <div id="statut">Préparation…</div>
+  </div>
+
+  <div id="erreur" hidden>
+    <div class="panneau-erreur">
+      <h2>Impossible de lancer la carte</h2>
+      <p id="message-erreur"></p>
+      <pre id="journal"></pre>
+      <div class="rang-actions">
+        <button class="btn btn-primaire" id="btn-reessayer">Réessayer</button>
+        <button class="btn btn-secondaire" id="btn-vider">Vider le cache Unity</button>
+        <button class="btn btn-secondaire" id="btn-retour2">Retour aux cartes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- données de référence ---------- */
+  var FPS_MOYEN = {'atlanta':54, 'bali':48, 'bangkok':50, 'barcelona':50, 'beijing':43, 'beijing-cn':48, 'berlin':50, 'buenos-aires':48, 'cairo':49, 'chang-an-cn':47, 'chicago':46, 'chicago-3-11':49, 'classic':50, 'copenhagen':49, 'copenhagen-super-runner':49, 'cosmic-crossroads':46, 'dubai':47, 'dunhuang':50, 'easter-ireland':47, 'edinburgh-cn':47, 'greece':50, 'guangzhou-cn':45, 'guilin-cn':51, 'hangzhou':49, 'harbin-cn':51, 'haunted-hood':50, 'havana':46, 'hawaii':47, 'hong-kong':47, 'houston':44, 'iceland':49, 'journey-through-china-cn':48, 'journey-to-the-east':60, 'kenya':49, 'las-vegas':49, 'london':48, 'lunar-new-year':50, 'luoyang':50, 'macau-cn':50, 'marrakesh':50, 'mexico':48, 'mexico-city':51, 'miami':47, 'monaco':49, 'moscow':50, 'mumbai':49, 'new-orleans':51, 'new-york':50, 'north-pole':48, 'oxford':50, 'paris':50, 'paris-cn':50, 'peru':51, 'prague':50, 'rio':49, 'rome':44, 'saint-petersburg':46, 'sakura-tokyo':48, 'san-francisco':51, 'sao-paulo':50, 'seoul':49, 'shenzhen':49, 'shenzhen-showdown':50, 'singapore':50, 'space-station':50, 'st-petersburg':50, 'subway-city':47, 'suzhou':53, 'sydney':51, 'tokyo':50, 'transylvania':49, 'underwater':46, 'vancouver':51, 'vancouver-spring':49, 'venice':47, 'venice-beach':51, 'washington-dc':48, 'winter-holiday':48, 'winter-wonderland':49, 'wuhan':48, 'zurich':50};
+
+  var META_CATALOGUE = {
+  'atlanta':{r:'États-Unis',c:'rgb(249 115 22)',v:'1.98'},
+  'bangkok':{r:'Thaïlande',c:'rgb(236 72 153)',v:'1.102'},
+  'barcelona':{r:'Espagne',c:'rgb(249 115 22)',v:'1.76'},
+  'beijing':{r:'Chine',c:'rgb(239 68 68)',v:'1.114'},
+  'berlin':{r:'Allemagne',c:'rgb(234 179 8)',v:'1.92'},
+  'buenos-aires':{r:'Argentine',c:'rgb(56 189 248)',v:'1.118'},
+  'cairo':{r:'Égypte',c:'rgb(245 158 11)',v:'1.81'},
+  'chicago':{r:'États-Unis',c:'rgb(251 146 60)',v:'3.11'},
+  'classic':{r:'Subway City',c:'rgb(239 68 68)',v:'1.0.4'},
+  'copenhagen-super-runner':{r:'Danemark',c:'rgb(14 165 233)',v:'3.63'},
+  'dunhuang':{r:'Chine',c:'rgb(217 119 6)',v:'2.99.0'},
+  'easter-ireland':{r:'Irlande',c:'rgb(74 222 128)',v:'3.61'},
+  'greece':{r:'Grèce',c:'rgb(56 189 248)',v:'2.38'},
+  'hangzhou':{r:'Chine',c:'rgb(20 184 166)',v:'6.03.0'},
+  'haunted-hood':{r:'Spécial',c:'rgb(168 85 247)',v:'3.19'},
+  'havana':{r:'Cuba',c:'rgb(34 197 94)',v:'1.90'},
+  'hawaii':{r:'États-Unis',c:'rgb(20 184 166)',v:'1.70'},
+  'hong-kong':{r:'Chine',c:'rgb(239 68 68)',v:'1.93'},
+  'houston':{r:'États-Unis',c:'rgb(59 130 246)',v:'1.111'},
+  'iceland':{r:'Islande',c:'rgb(56 189 248)',v:'2.36'},
+  'kenya':{r:'Quênia',c:'rgb(234 179 8)',v:'1.45'},
+  'las-vegas':{r:'États-Unis',c:'rgb(244 114 182)',v:'3.25.2'},
+  'london':{r:'Royaume-Uni',c:'rgb(239 68 68)',v:'1.96.2'},
+  'lunar-new-year':{r:'Chine',c:'rgb(239 68 68)',v:'3.26.2'},
+  'luoyang':{r:'Chine',c:'rgb(126 52 91)',v:'3.3.0'},
+  'mexico':{r:'Mexique',c:'rgb(234 179 8)',v:'1.78'},
+  'mexico-city':{r:'Mexique',c:'rgb(250 204 21)',v:'1.21'},
+  'miami':{r:'États-Unis',c:'rgb(244 114 182)',v:'1.105'},
+  'monaco':{r:'Monaco',c:'rgb(244 63 94)',v:'1.87'},
+  'moscow':{r:'Russie',c:'rgb(96 165 250)',v:'1.108'},
+  'new-orleans':{r:'États-Unis',c:'rgb(168 85 247)',v:'3.33.4'},
+  'new-york':{r:'États-Unis',c:'rgb(59 130 246)',v:'1.91.2'},
+  'north-pole':{r:'Arctique',c:'rgb(125 211 252)',v:'3.39'},
+  'paris':{r:'France',c:'rgb(244 63 94)',v:'1.83'},
+  'rio':{r:'Brésil',c:'rgb(6 182 212)',v:'3.16.0'},
+  'san-francisco':{r:'États-Unis',c:'rgb(249 115 22)',v:'1.100'},
+  'sao-paulo':{r:'Brésil',c:'rgb(34 197 94)',v:'1.25'},
+  'seoul':{r:'Corée du Sud',c:'rgb(99 102 241)',v:'3.20'},
+  'singapore':{r:'Singapour',c:'rgb(45 212 191)',v:'1.57'},
+  'space-station':{r:'Orbital',c:'rgb(96 165 250)',v:'2.11'},
+  'st-petersburg':{r:'Russie',c:'rgb(129 140 248)',v:'2.10'},
+  'subway-city':{r:'Métropole',c:'rgb(56 189 248)',v:'2.37'},
+  'suzhou':{r:'Chine',c:'rgb(14 165 233)',v:'4.08.0'},
+  'tokyo':{r:'Japon',c:'rgb(168 85 247)',v:'3.17.1'},
+  'transylvania':{r:'Roumanie',c:'rgb(167 139 250)',v:'1.62'},
+  'underwater':{r:'Océan',c:'rgb(14 165 233)',v:'3.28'},
+  'vancouver':{r:'Canada',c:'rgb(34 197 94)',v:'3.37.1'},
+  'venice':{r:'Italie',c:'rgb(251 113 133)',v:'1.99'},
+  'venice-beach':{r:'États-Unis',c:'rgb(236 72 153)',v:'1.88'},
+  'winter-holiday':{r:'Spécial',c:'rgb(56 189 248)',v:'1.112'},
+  'winter-wonderland':{r:'Autriche',c:'rgb(96 165 250)',v:'3.39'},
+  'wuhan':{r:'Chine',c:'rgb(239 68 68)',v:'3.36.1'},
+  'zurich':{r:'Suisse',c:'rgb(217 119 6)',v:'1.101'}
+  };
+
+  var NOMS_SPECIAUX = {
+    "st-petersburg": "St Petersburg", "saint-petersburg": "Saint Petersburg",
+    "washington-dc": "Washington D.C.", "sao-paulo": "São Paulo",
+    "chicago-3-11": "Chicago 3:11", "rio": "Rio de Janeiro",
+    "new-york": "New York", "las-vegas": "Las Vegas", "space-station": "Space Station",
+    "subway-city": "Subway City", "classic": "Classic"
+  };
+
+  var DEGRADES = [
+    ["#4c1d95", "#7c3aed"], ["#0e7490", "#06b6d4"], ["#9d174d", "#ec4899"],
+    ["#166534", "#22c55e"], ["#9a3412", "#f97316"], ["#1e3a8a", "#3b82f6"]
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var cartes = null;          // maps.json
+  var instanceUnity = null;   // instance Unity en cours
+
+  /* ——— favoris (localStorage, aucune donnée envoyée) ——— */
+  var CLE_FAVS = "voltmaps_favoris";
+  function lireFavs() {
+    try { return JSON.parse(localStorage.getItem(CLE_FAVS)) || []; }
+    catch (e) { return []; }
+  }
+  function estFavori(s) { return lireFavs().indexOf(s) !== -1; }
+  function basculerFavori(s) {
+    var f = lireFavs(), i = f.indexOf(s);
+    if (i < 0) f.push(s); else f.splice(i, 1);
+    try { localStorage.setItem(CLE_FAVS, JSON.stringify(f)); } catch (e) {}
+  }
+
+  function nomAffiche(slug) {
+    if (NOMS_SPECIAUX[slug]) return NOMS_SPECIAUX[slug];
+    return slug.split("-").map(function (m) {
+      return m ? m.charAt(0).toUpperCase() + m.slice(1) : m;
+    }).join(" ");
+  }
+
+  function initiales(slug) {
+    var mots = nomAffiche(slug).split(" ");
+    return (mots[0].charAt(0) + (mots[1] ? mots[1].charAt(0) : "")).toUpperCase();
+  }
+
+  function hashChaine(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
+  function slugDepuisRoute() {
+    /* ancien lien profond : /<slug>/reborn/<mode>, /jogar/<slug>/…, /mapas/<slug> */
+    var segs = location.pathname.split("/").filter(Boolean);
+    for (var i = 0; i < segs.length; i++)
+      if (cartes[segs[i]]) return segs[i];
+    return null;
+  }
+
+  var MODES = { enhanced: "original", training: "training", legacy: null };
+
+  function modeDepuisHash() {
+    var m = location.hash.match(/^#jouer=([\w-]+)(?:\/(enhanced|training|legacy))?$/);
+    if (!m || !cartes[m[1]]) return null;
+    return { slug: m[1], mode: m[2] || "enhanced" };
+  }
+
+  function routeDepuisChemin() {
+    var segs = location.pathname.split("/").filter(Boolean);
+    for (var i = 0; i < segs.length; i++) {
+      if (cartes[segs[i]]) {
+        var suit = segs[i + 1];
+        if (suit === "reborn") suit = segs[i + 2];
+        var mode = (suit === "enhanced" || suit === "training" || suit === "legacy")
+          ? suit : "enhanced";
+        return { slug: segs[i], mode: mode };
+      }
+    }
+    return null;
+  }
+
+  /* ---------- modale de choix du mode ---------- */
+  var slugModale = null;
+  function ouvrirModale(slug) {
+    slugModale = slug;
+    $("modale-nom").textContent = nomAffiche(slug);
+    $("choix-enhanced").href = "/" + slug + "/reborn/enhanced";
+    $("choix-training").href = "/" + slug + "/reborn/training";
+    $("modale").hidden = false;
+  }
+  $("modale-fermer").addEventListener("click", function () {
+    $("modale").hidden = true;
+  });
+  $("modale").addEventListener("click", function (e) {
+    if (e.target === this) this.hidden = true;
+  });
+
+  /* ============================ GALERIE ============================ */
+
+  function construireGrille() {
+    var grille = $("grille");
+    var slugs = Object.keys(cartes).sort(function (a, b) {
+      return nomAffiche(a).localeCompare(nomAffiche(b), "fr");
+    });
+    var frag = document.createDocumentFragment();
+
+    slugs.forEach(function (slug) {
+      var a = document.createElement("a");
+      a.className = "carte";
+      a.href = "#jouer=" + slug;
+
+      var meta = META_CATALOGUE[slug] || null;
+      if (meta) a.setAttribute("data-region", meta.r);
+      if (meta && meta.c) {
+        a.style.setProperty("--carte-accent", meta.c);
+      }
+
+      var vignette = document.createElement("div");
+      vignette.className = "vignette";
+
+      var g = (meta && meta.c)
+        ? [meta.c, "#101527"]
+        : DEGRADES[hashChaine(slug) % DEGRADES.length];
+      var rep = document.createElement("div");
+      rep.className = "replace-vignette";
+      rep.style.background = "linear-gradient(135deg, " + g[0] + ", " + g[1] + ")";
+      rep.textContent = initiales(slug);
+      vignette.appendChild(rep);
+
+      var img = document.createElement("img");
+      img.alt = nomAffiche(slug);
+      img.loading = "lazy";
+      img.src = "/game-assets/thumbnails/reborn/reborn_" + slug + ".webp";
+      img.onload = function () { img.classList.add("charge"); };
+      img.onerror = function () { img.remove(); };
+      vignette.appendChild(img);
+
+      vignette.insertAdjacentHTML("beforeend",
+        '<div class="scrim"></div>' +
+        '<div class="nom">' + nomAffiche(slug) +
+        (meta && meta.r ? '<span class="region">' + meta.r + "</span>" : "") +
+        (meta && meta.v ? '<span class="version">v' + meta.v + "</span>" : "") +
+        "</div>");
+
+
+      var btnFav = document.createElement("button");
+      btnFav.className = "btn-fav" + (estFavori(slug) ? " actif" : "");
+      btnFav.setAttribute("aria-label", "Ajouter " + nomAffiche(slug) + " aux favoris");
+      btnFav.textContent = "★";
+      btnFav.addEventListener("click", function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        basculerFavori(slug);
+        btnFav.classList.toggle("actif", estFavori(slug));
+      });
+      vignette.appendChild(btnFav);
+
+      vignette.insertAdjacentHTML("beforeend",
+        '<button class="btn-jouer" aria-label="Jouer à ' + nomAffiche(slug) + '">▶</button>');
+
+      a.appendChild(vignette);
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ouvrirModale(slug);
+      });
+      frag.appendChild(a);
+    });
+
+    grille.appendChild(frag);
+    $("compteur").innerHTML = "<b>" + slugs.length + "</b> cartes";
+
+    /* filtres par région */
+    var regions = [];
+    slugs.forEach(function (s) {
+      var r = (META_CATALOGUE[s] || {}).r;
+      if (r && regions.indexOf(r) < 0) regions.push(r);
+    });
+    regions.sort(function (x, y) { return x.localeCompare(y, "fr"); });
+    var barreFiltres = $("filtres");
+    var appliquerFiltre = function (r) {
+      var favs = lireFavs();
+      var visibles = 0;
+      document.querySelectorAll("#grille .carte").forEach(function (c) {
+        var region = c.getAttribute("data-region");
+        var slugCarte = (c.getAttribute("href") || "").replace("#jouer=", "");
+        var ok = r === "Toutes"
+          || (r === "FAVS" && favs.indexOf(slugCarte) !== -1)
+          || (r !== "Toutes" && r !== "FAVS" && region === r);
+        c.style.display = ok ? "" : "none";
+        if (ok) visibles++;
+      });
+      $("vide").hidden = visibles > 0;
+    };
+    var groupes = ["Toutes", "FAVS"].concat(regions);
+    groupes.forEach(function (r, ix) {
+      var b = document.createElement("button");
+      b.className = "filtre" + (ix === 0 ? " actif" : "");
+      b.textContent = r === "FAVS" ? "★ favoris" : r;
+      b.addEventListener("click", function () {
+        document.querySelectorAll("#filtres .filtre").forEach(function (x) { x.classList.remove("actif"); });
+        b.classList.add("actif");
+        appliquerFiltre(r);
+      });
+      barreFiltres.appendChild(b);
+    });
+    window.__appliquerFiltre = appliquerFiltre;
+  }
+
+  $("recherche").addEventListener("input", function () {
+    var q = this.value.trim().toLowerCase();
+    var visibles = 0;
+    document.querySelectorAll(".carte").forEach(function (c) {
+      var ok = !q || c.textContent.toLowerCase().indexOf(q) !== -1;
+      c.style.display = ok ? "" : "none";
+      if (ok) visibles++;
+    });
+    $("vide").hidden = visibles > 0;
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "/" && document.activeElement !== $("recherche") &&
+        $("vue-jeu").hidden) {
+      e.preventDefault();
+      $("recherche").focus();
+    }
+  });
+
+  /* ============================ JEU ============================ */
+
+  var journal = [];
+  function noterJournal(ligne) {
+    journal.push(new Date().toTimeString().slice(0, 8) + "  " + ligne);
+    if (journal.length > 12) journal.shift();
+  }
+  console._error = console.error;
+  console.error = function () {
+    noterJournal("console.error: " + Array.prototype.join.call(arguments, " ").slice(0, 220));
+    return console._error.apply(console, arguments);
+  };
+  window.addEventListener("error", function (e) {
+    if ($("vue-jeu").hidden) return;
+    noterJournal("erreur: " + (e.message || "inconnue"));
+  });
+
+  function afficherErreur(titre, detail) {
+    $("statut").textContent = "";
+    $("titre-chargement").textContent = titre;
+    $("message-erreur").textContent = detail;
+    $("journal").textContent = journal.join("\n") || "(aucun détail)";
+    $("erreur").hidden = false;
+    $("chargement").classList.add("parti");
+  }
+
+  function lancerCarte(slug, mode) {
+    mode = mode || "enhanced";
+    var info = cartes[slug];
+    if (!info) { alert("Carte inconnue : " + slug); return; }
+    var modeGateway = MODES[mode];
+
+    journal.length = 0;
+    $("vue-galerie").style.display = "none";
+    $("vue-jeu").hidden = false;
+    $("erreur").hidden = true;
+    $("chargement").classList.remove("parti");
+    $("barre").style.width = "0%";
+    $("statut").textContent = "Préparation…";
+    $("titre-chargement").textContent = nomAffiche(slug);
+    document.title = nomAffiche(slug) + " · " + mode.charAt(0).toUpperCase() + mode.slice(1);
+
+    if (!modeGateway) {
+      afficherErreur("Build legacy indisponible",
+        "Ce miroir local ne contient que le build « Enhanced ». L'ancien build " +
+        "n'a jamais été récupéré avant d'être supprimé chez le site d'origine.");
+      return;
+    }
+
+    /* -- pont d'activation : jeton rejoué depuis la réponse en cache du serveur
+          local (enveloppe de contenu comprise). L'expiration du jeton est la
+          seule vérification qui bloque : l'horloge est figée pendant la fenêtre
+          activate(), le nonce n'est pas vérifié par le moteur. -- */
+    var chargeUtile = {};
+    try { chargeUtile = JSON.parse(atob(info.activationToken.split(".")[1])); }
+    catch (e) { noterJournal("jeton illisible : " + e); }
+
+    var getRandomNatif = crypto.getRandomValues.bind(crypto);
+    crypto.getRandomValues = function (tableau) {
+      /* nonce du moteur : tous les chemins d'entropie (JS_GetRandomBytes et
+         l'émulation /dev/urandom via randomFill) sont nourris avec le nonce du
+         jeton capturé, répété sur tout le tampon — l'octet lu à tout offset
+         d'un tampon rempli en phase reste le bon si l'offset est aligné, et
+         l'observation du nonce réel permet d'ajuster la phase (décalage). */
+      if (tableau.length === 16) {
+        for (var i = 0; i < 16; i++)
+          tableau[i] = parseInt(info.unityNonce.substr(i * 2, 2), 16);
+        return tableau;
+      }
+      if (tableau.length >= 1024) {
+        console.log("[launch] pool urandom forcé (" + tableau.length + " o)");
+        for (var i = 0; i < tableau.length; i++)
+          tableau[i] = parseInt(info.unityNonce.substr((i % 16) * 2, 2), 16);
+        return tableau;
+      }
+      return getRandomNatif(tableau);
+    };
+
+    /* Le moteur lit le temps via son import TavvkkjEnvNow → __TVK_ENV__.dateNow,
+       indépendant de Date.now (que le loader Unity utilise pour ses délais :
+       n'y touchez pas, un gel bloque le téléchargement du moteur). Figer
+       __TVK_ENV__.dateNow à l'émission du jeton rejoué rend sa vérification
+       d'expiration (iat + 90 s) éternellement valide, loader compris. */
+    /* __TVK_ENV__ prédéfini : le framework le conserve tel quel (il ne le
+       crée que s'il manque). L'horloge du moteur doit AVANCER (une horloge
+       figée bloque son chargement) — et le moteur ne vérifie pas l'expiration
+       du jeton au démarrage (sessions entières validées avec des jetons
+       expirés, prouvé en jeu). */
+    var t0jeton = 0;   /* réaligné sur l'iat du jeton réellement servi */
+    globalThis.__TVK_ENV__ = {
+      flags: 0,
+      dateNow: function () { return Date.now(); },
+      origin: "https://tavvkkj.xyz",
+      isNative: function () { return true; },
+      checkNatives: function () { return 0; }
+    };
+
+    var receipt = {
+      buildId: info.buildId,
+      slug: info.slug,
+      routeSlug: info.slug,
+      contentSlug: info.slug,
+      catalogUrl: info.catalogUrl.replace("assets.voltmaps.xyz", "assets.tavvkkj.xyz"),
+      contentHash: info.contentHash,
+      mode: modeGateway
+    };
+    var rendreHorlogeAprès = function (promesse) {
+      /* PAS de retour à l'heure réelle : le moteur revalide l'expiration du
+         jeton à la phase de contenu — un saut d'horloge (+25 h) serait fatal.
+         La session continue sur l'heure décalée, qui avance normalement. */
+      promesse.then(function () {}, function () {});
+    };
+    /* aligne le nonce du moteur (généré aléatoirement) sur une valeur connue :
+       écrase dans son tas les représentations UTF-8, UTF-16 et brutes. */
+    var alignerNonce = function (nonce, cible) {
+      try {
+        var M = (instanceUnity && instanceUnity.Module) || globalThis.Module;
+        var tas = M && M.HEAPU8;
+        if (!tas) throw new Error("tas indisponible");
+        var octCible = [];
+        for (var i = 0; i < 16; i++)
+          octCible.push(parseInt(cible.substr(i * 2, 2), 16));
+        var pris_total = 0;
+        function remplacer(motif, remplace, etiquette) {
+          var from = 0, hit, pris = 0;
+          while ((hit = tas.indexOf(motif[0], from)) !== -1) {
+            from = hit + 1;
+            if (hit + motif.length > tas.length) break;
+            var ok = true;
+            for (var i = 1; i < motif.length; i++)
+              if (tas[hit + i] !== motif[i]) { ok = false; break; }
+            if (ok) {
+              for (var i = 0; i < remplace.length; i++)
+                tas[hit + i] = remplace[i];
+              pris++;
+              if (pris > 4096) break;
+            }
+          }
+          pris_total += pris;
+        }
+        var u8 = [], u16 = [], brut = [];
+        for (var i = 0; i < 32; i++) {
+          u8.push(nonce.charCodeAt(i));
+          u16.push(nonce.charCodeAt(i), 0);
+        }
+        for (var i = 0; i < 16; i++)
+          brut.push(parseInt(nonce.substr(i * 2, 2), 16));
+        var rep8 = [];
+        for (var i = 0; i < 32; i++)
+          rep8.push(parseInt(cible.substr(i * 2, 2), 16));
+        var rep16 = [];
+        for (var i = 0; i < 16; i++) {
+          var o = octCible[i];
+          var hx = (o < 16 ? "0" : "") + o.toString(16);
+          rep16.push(hx.charCodeAt(0), 0, hx.charCodeAt(1), 0);
+        }
+        remplacer(u8, rep8, "utf8");
+        remplacer(u16, rep16, "utf16");
+        remplacer(brut, octCible, "brut");
+        console.log("[launch] nonce moteur aligné sur " + cible + " (" + pris_total + " occurrences)");
+      } catch (e) { console.log("[launch] patch nonce: " + e); }
+    };
+    var pont = {
+      authorized: true,
+      mode: modeGateway,
+      activate: function (nonce) {
+        console.log("[launch] activate() nonce=" + nonce);
+        $("statut").textContent = "Activation de la carte…";
+        $("barre").style.width = "100%";
+        /* 1er choix : jeton FRAIS du gateway via le proxy local.
+           Le handshake du service worker (clé de contenu protégé) est exigé. */
+        var promesse = pretSW.then(function (sw) {
+          if (!sw) throw new Error("service_worker_absent");
+          return messageSW(sw, {
+            protocolVersion: 3,
+            type: "tro-protected-content-handshake"
+          });
+        }).then(function (handshake) {
+          console.log("[launch] handshake SW ok (" + handshake.handshakeId + ")");
+          var corps = {
+            buildId: info.buildId,
+            contentHash: info.contentHash,
+            contentSlug: info.slug,
+            slug: info.slug,
+            mode: modeGateway,
+            unityNonce: nonce,
+            gatewayToken: "",
+            appCapability: null,
+            keyHandshake: handshake
+          };
+          return fetch("/reborn-api/v1/activate", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "text/plain;charset=UTF-8" },
+            body: JSON.stringify(corps)
+          }).then(function (rep) {
+            if (!rep.ok) return rep.json().then(function (j) {
+              throw new Error(j.error || "gateway HTTP " + rep.status);
+            }, function () {
+              throw new Error("gateway HTTP " + rep.status);
+            });
+            return rep.json();
+          }).then(function (d) {
+            if (!d.activationToken) throw new Error(d.error || "gateway sans jeton");
+            /* horloge alignée sur le jeton réellement servi : son iat doit être
+               « maintenant » pour le moteur (un iat futur = claims invalides) */
+            try {
+              var pl = d.activationToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+              pl = (pl + "===").slice(0, pl.length + (4 - pl.length % 4) % 4);
+              var cu2 = JSON.parse(atob(pl));
+              t0jeton = ((cu2.iat || chargeUtile.iat) * 1000) + 1000;
+              alignerNonce(nonce, cu2.unityNonce);
+            } catch (e) { console.log("[launch] alignement impossible: " + e); }
+            /* l'enveloppe (clé de contenu chiffrée) est remise au SW qui la
+               déchiffre : il pourra ensuite décoder les bundles scellés */
+            var env = d.protectedContentEnvelope;
+            var decode = (env && swActif)
+              ? messageSW(swActif, {
+                  envelope: env, protocolVersion: 3,
+                  type: "tro-protected-content-envelope"
+                }).then(function () {
+                  console.log("[launch] enveloppe de contenu déchiffrée");
+                }, function (e) {
+                  console.log("[launch] enveloppe non déchiffrée : " + e);
+                })
+              : Promise.resolve();
+            return decode.then(function () {
+              /* receipt MINIMAL (même forme que le repli) : les champs annexes
+                 du gateway (signature, tokens de rang…) font échouer la
+                 validation du moteur quand ils sont modifiés ou incohérents */
+              return {
+                unityNonce: nonce,
+                activationToken: d.activationToken,
+                buildId: info.buildId,
+                slug: info.slug,
+                routeSlug: info.slug,
+                contentSlug: info.slug,
+                catalogUrl: receipt.catalogUrl,
+                contentHash: info.contentHash,
+                mode: modeGateway,
+                officialReceipt: d.officialReceipt !== false,
+                isOfficialReceipt: d.isOfficialReceipt !== false,
+                hostMatchesOfficial: d.hostMatchesOfficial !== false
+              };
+            });
+          });
+        }).catch(function (e) {
+          /* repli : rejeu du jeton capturé (nonce forcé + horloge figée) */
+          console.log("[launch] gateway indisponible (" + e + "), rejeu du jeton capturé");
+          alignerNonce(nonce, info.unityNonce);
+          return Object.assign({ unityNonce: nonce, activationToken: info.activationToken }, receipt);
+        });
+        rendreHorlogeAprès(promesse);
+        return promesse;
+      }
+    };
+    globalThis.__TAVVKKJ_REBORN_LAUNCH__ = pont;
+    globalThis.__VOLTMAPS_REBORN_LAUNCH__ = pont;
+
+    var dossier = "/builds/shared/" + info.buildId.replace("reborn-shared-", "") + "/Build/";
+    var progMax = 0;
+    var filet = setTimeout(function () {
+      if (!instanceUnity)
+        afficherErreur("Le chargement n'aboutit pas",
+          "Plus de deux minutes sans progression. Vérifie que le serveur local tourne " +
+          "(serve_localhost.py, port 8907) puis réessaie. Si le problème persiste, " +
+          "vide le cache Unity ci-dessous.");
+    }, 120000);
+
+    $("statut").textContent = "Téléchargement du moteur…";
+    var script = document.createElement("script");
+    script.src = dossier + "reborn-shared.loader.js";
+    script.onerror = function () {
+      clearTimeout(filet);
+      afficherErreur("Loader introuvable",
+        "Le fichier " + dossier + "reborn-shared.loader.js n'a pas pu être chargé. " +
+        "Le serveur local est-il lancé sur le port 8907 ?");
+    };
+    script.onload = function () {
+      createUnityInstance($("unity-canvas"), {
+        dataUrl: dossier + "reborn-shared.data.br?v=13",
+        frameworkUrl: dossier + "reborn-shared.framework.js.br?v=9",
+        codeUrl: dossier + "reborn-shared.wasm.br",
+        streamingAssetsUrl: "/builds/shared/" + info.buildId.replace("reborn-shared-", "") + "/StreamingAssets",
+        companyName: "Reborn",
+        productName: "Reborn",
+        productVersion: "1.0",
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.75)
+      }, function (inst, progres) {
+        if (progres > progMax) {
+          progMax = progres;
+          $("barre").style.width = Math.round(progres * 100) + "%";
+          if (progres >= 1) $("statut").textContent = "Initialisation du moteur…";
+        }
+      }).then(function (inst) {
+        instanceUnity = inst;
+        clearTimeout(filet);
+        $("chargement").classList.add("parti");
+        noterJournal("moteur prêt");
+      }).catch(function (err) {
+        clearTimeout(filet);
+        afficherErreur("Le moteur n'a pas pu démarrer", String(err).slice(0, 300));
+      });
+    };
+    document.body.appendChild(script);
+  }
+
+  /* ---------- note : le popup « Site non officiel » est dessiné par le jeu ----------
+     Il ne s'affiche qu'une seule fois par navigateur : une fois le ✕ cliqué,
+     la fermeture est mémorisée dans la sauvegarde du jeu (IndexedDB) et il ne
+     réapparaît plus. Les événements synthétiques sont filtrés par le jeu
+     (isTrusted), impossible de le fermer depuis la page. */
+
+  /* ---------- nettoyage cache Unity (IndexedDB) en cas de téléchargement cassé ---------- */
+  function viderCacheUnity() {
+    var promesses = [];
+    try {
+      if (window.indexedDB && indexedDB.databases) {
+        promesses.push(indexedDB.databases().then(function (bds) {
+          bds.forEach(function (b) {
+            if (/unity/i.test(b.name || ""))
+              promesses.push(indexedDB.deleteDatabase(b.name).catch(function () {}));
+          });
+        }));
+      }
+    } catch (e) {}
+    Promise.all(promesses).catch(function () {}).then(function () {
+      location.reload();
+    });
+  }
+
+  $("btn-reessayer").addEventListener("click", function () { location.reload(); });
+  $("btn-vider").addEventListener("click", viderCacheUnity);
+  function quitterJeu() { location.href = "/"; }
+  $("btn-retour2").addEventListener("click", quitterJeu);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("vue-jeu").hidden) quitterJeu();
+  });
+
+  /* navigation par hash (clic carte, retour navigateur, lien profond) :
+     on recharge pour repartir d'un environnement JS propre */
+  window.addEventListener("hashchange", function () { location.reload(); });
+
+  /* ============================ DÉMARRAGE ============================ */
+
+  fetch("/maps.json").then(function (r) {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function (donnees) {
+    cartes = donnees;
+
+    construireGrille();
+
+    var cible = modeDepuisHash();
+    if (!cible) {
+      cible = routeDepuisChemin();
+      if (cible) history.replaceState(null, "",
+        "/" + cible.slug + "/reborn/" + cible.mode);
+    }
+    if (cible) lancerCarte(cible.slug, cible.mode);
+  }).catch(function (e) {
+    $("compteur").textContent = "maps.json illisible — serveur local lancé ?";
+    console.error("maps.json :", e);
+  });
+})();
+</script>
+</body>
+</html>

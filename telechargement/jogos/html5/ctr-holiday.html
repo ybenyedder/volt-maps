@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <script>
+      if ((location.hostname === 'ss.tavvkkj.xyz' && location.pathname !== '/storage-export') || location.hostname === 'www.tavvkkj.xyz') {
+        location.replace('https://tavvkkj.xyz' + location.pathname + location.search + location.hash);
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050506" />
+    <meta name="color-scheme" content="dark" />
+    <title>Cut the Rope: Holiday Gift online — jogo HTML5 | tavvkkj.xyz</title>
+    <meta name="description" content="Jogue Cut the Rope: Holiday Gift online direto no navegador em tavvkkj.xyz." />
+    <link rel="canonical" href="/jogos/html5/jogos/html5/ctr-holiday" />
+    <meta property="og:title" content="Cut the Rope: Holiday Gift online — jogo HTML5 | tavvkkj.xyz" />
+    <meta property="og:description" content="Jogue Cut the Rope: Holiday Gift online direto no navegador em tavvkkj.xyz." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://tavvkkj.xyz/game-assets/thumbnails/html5/ctr-holiday.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cut the Rope: Holiday Gift online — jogo HTML5 | tavvkkj.xyz" />
+    <meta name="twitter:description" content="Jogue Cut the Rope: Holiday Gift online direto no navegador em tavvkkj.xyz." />
+    <meta name="twitter:image" content="https://tavvkkj.xyz/game-assets/thumbnails/html5/ctr-holiday.webp" />
+    <link rel="icon" type="image/webp" sizes="256x256" href="/jogos/html5/jogos/html5/favicon.webp%3Fv=3" />
+    <link rel="apple-touch-icon" sizes="256x256" href="/jogos/html5/jogos/html5/favicon.webp%3Fv=3" />
+    <link rel="dns-prefetch" href="https://tavvkkj.github.io/" />
+    <link rel="preconnect" href="https://tavvkkj.github.io" crossorigin />
+    <style>
+      /* Enough to place the splash before boot-splash.css arrives. */
+      .boot-splash.boot-experience {
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        display: grid;
+        min-height: 100svh;
+        place-items: center;
+        padding: 24px;
+        overflow: hidden;
+        color: #f4f4f5;
+        background: #0a0a0b;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .boot-panel {
+        width: min(360px, 100%);
+      }
+    </style>
+
+    <script>
+      (function () {
+        'use strict';
+        var officialHost = 'ss.tavvkkj.xyz';
+        if (window.location.hostname.toLowerCase() === officialHost && window.location.protocol === 'http:') {
+          var secureUrl = new URL(window.location.href);
+          secureUrl.protocol = 'https:';
+          window.location.replace(secureUrl.href);
+          return;
+        }
+
+        document.addEventListener('contextmenu', function (e) {
+          const target = e.target;
+          if (
+            target.tagName === 'CANVAS' ||
+            target.tagName === 'IMG' ||
+            target.tagName === 'VIDEO' ||
+            target.closest('.game-page') ||
+            target.closest('.unity-stage') ||
+            target.closest('.map-thumb-shell')
+          ) {
+            e.preventDefault();
+            return false;
+          }
+        }, { capture: true, passive: false });
+        document.addEventListener('dragstart', function (e) {
+          if (e.target.tagName === 'IMG' || e.target.tagName === 'CANVAS') {
+            e.preventDefault();
+          }
+        }, { capture: true });
+        var _realFetch = window.fetch;
+        var _scrapeCount = 0;
+        var _scrapeTimer = 0;
+        window.fetch = function (url) {
+          var urlStr = String(url || '');
+          if (/^https:\/\/cdp\.cloud\.unity3d\.com\/v1\/events(?:[/?#]|$)/i.test(urlStr)) {
+            return Promise.resolve(new Response(null, { status: 204 }));
+          }
+          if (urlStr.startsWith('http') && !urlStr.includes(window.location.hostname)) {
+          } else {
+            _scrapeCount++;
+            clearTimeout(_scrapeTimer);
+            _scrapeTimer = setTimeout(function () { _scrapeCount = 0; }, 2000);
+            if (_scrapeCount > 40 && !document.hasFocus()) {
+              console.warn('[TRO] Rate limiting suspicious bulk fetch');
+              return new Promise(function (_, reject) {
+                setTimeout(function () { reject(new Error('Rate limited')); }, 2000);
+              });
+            }
+          }
+          return _realFetch.apply(this, arguments);
+        };
+        var ua = navigator.userAgent || '';
+        var blockedAgents = ['web2zip', 'HTTrack', 'wget', 'curl/', 'python-requests', 'scrapy', 'archiver'];
+        for (var i = 0; i < blockedAgents.length; i++) {
+          if (ua.toLowerCase().includes(blockedAgents[i].toLowerCase())) {
+            document.documentElement.innerHTML = '<body style="background:#000;color:#fff;font-family:monospace;padding:40px">Access denied.</body>';
+            throw new Error('Blocked');
+          }
+        }
+        document.addEventListener('keydown', function (e) {
+          if (document.body.classList.contains('is-game-route')) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) {
+              e.preventDefault();
+            }
+          }
+        }, { capture: true });
+        var _patchCanvas = function () {
+          var canvas = document.querySelector('.unity-stage canvas, .game-page canvas');
+          if (canvas) {
+            canvas.toDataURL = function () { return ''; };
+            canvas.toBlob = function (cb) { cb(null); };
+            canvas.captureStream = function () { return null; };
+          }
+        };
+        window.__troCanvasProtectionPatch = _patchCanvas;
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(_patchCanvas, 8000);
+          setTimeout(_patchCanvas, 16000);
+        });
+        Object.defineProperty(document, 'referrer', {
+          get: function () { return window.location.origin; },
+          configurable: true,
+        });
+      })();
+    </script>
+    <script type="module" crossorigin src="/jogos/html5/jogos/html5/assets/BjqKbfPm.js"></script>
+    <link rel="stylesheet" crossorigin href="/jogos/html5/jogos/html5/assets/Cf5HdjmP.css">
+      <meta name="robots" content="noindex, follow" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Cut the Rope: Holiday Gift","description":"Jogue Cut the Rope: Holiday Gift online direto no navegador em tavvkkj.xyz.","url":"https://tavvkkj.xyz/jogos/html5/ctr-holiday","image":"https://tavvkkj.xyz/game-assets/thumbnails/html5/ctr-holiday.webp","gamePlatform":"Web browser","operatingSystem":"Any","applicationCategory":"Game","inLanguage":"pt-BR","isPartOf":{"@type":"WebSite","name":"tavvkkj.xyz","url":"https://tavvkkj.xyz/"},"potentialAction":{"@type":"PlayAction","target":"https://tavvkkj.xyz/verificar-anuncios/?return=%2Fjogar%2Fhtml5%2Fctr-holiday"}}</script>
+  </head>
+  <body>
+
+
+
+
+
+
+    <div class="boot-splash boot-experience" id="boot-splash" role="status" aria-live="polite" style="--boot-progress: 6">
+      <main class="boot-panel">
+        <span class="boot-logo"><img src="/jogos/html5/jogos/html5/logo.webp" alt="" width="40" height="40" /></span>
+        <section class="boot-narrative" id="boot-splash-copy">
+          <h1 id="boot-splash-title">Preparando o portal</h1>
+          <p id="boot-splash-status">Carregando os recursos essenciais da interface.</p>
+        </section>
+        <div
+          class="boot-track-line"
+          id="boot-splash-progress"
+          role="progressbar"
+          aria-label="Progresso inicial"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="6"
+        ><span class="boot-track-value"></span></div>
+      </main>
+    </div>
+    <div id="root"><main class="public-document public-document-static" id="main-content">
+    <header class="public-document-hero">
+      <img src="/jogos/html5/jogos/html5/game-assets/thumbnails/html5/ctr-holiday.webp" alt="Capa de Cut the Rope: Holiday Gift" width="960" height="540" />
+      <span class="public-document-eyebrow">Jogo para navegador</span>
+      <h1>Cut the Rope: Holiday Gift</h1>
+      <p>Jogue Cut the Rope: Holiday Gift online direto no navegador.</p>
+      <div class="public-document-actions"><a class="btn btn--primary" href="/jogos/html5/jogar/html5/ctr-holiday">Jogar agora</a><a href="/jogos/html5/jogos/html5/index#html5-games">Ver todos os jogos</a></div>
+    </header>
+  </main></div>
+    <script>
+      (function () {
+        var retryingModule = false;
+        window.addEventListener('error', function (event) {
+          var failed = event.target;
+          if (
+            retryingModule ||
+            !(failed instanceof HTMLScriptElement) ||
+            failed.type !== 'module' ||
+            !failed.src.includes('/assets/')
+          ) return;
+
+          retryingModule = true;
+          var retry = document.createElement('script');
+          var retryUrl = new URL(failed.src);
+          retryUrl.searchParams.set('moduleRecovery', Date.now().toString(36));
+          retry.type = 'module';
+          retry.crossOrigin = 'anonymous';
+          retry.src = retryUrl.href;
+          retry.onload = function () {
+            try { sessionStorage.removeItem('tavvkkj.module-recovery-attempts'); } catch {}
+          };
+          retry.onerror = function () {
+            var attempts = 0;
+            try {
+              attempts = Number(sessionStorage.getItem('tavvkkj.module-recovery-attempts')) || 0;
+              sessionStorage.setItem('tavvkkj.module-recovery-attempts', String(attempts + 1));
+            } catch {}
+            if (attempts >= 2) return;
+            window.setTimeout(function () {
+              var page = new URL(window.location.href);
+              page.searchParams.set('moduleRecovery', Date.now().toString(36));
+              window.location.replace(page.href);
+            }, 1800);
+          };
+          document.head.appendChild(retry);
+        }, true);
+      })();
+    </script>
+  </body>
+</html>

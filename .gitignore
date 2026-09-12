@@ -1,0 +1,9 @@
+# gros fichiers du jeu (build + contenu chiffré) — à récupérer séparément
+telechargement/builds/
+cache/
+install/
+.profil_nav/
+raw/
+*.log
+__pycache__/
+*.pyc

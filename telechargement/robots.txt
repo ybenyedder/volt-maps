@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /runs
+Disallow: /api/
+Disallow: /github-games/
+Disallow: /__storage-export
+Disallow: /*/original
+Disallow: /*/treino
+Disallow: /*/training-
+
+Sitemap: https://tavvkkj.xyz/sitemap.xml

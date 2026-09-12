@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt"><head><meta charset="utf-8">
+<title>Redirection locale…</title>
+<script>
+/* Contournement local de l'interstitiel publicitaire :
+   redirige immédiatement vers la destination ?return=... sans attendre les pubs. */
+(function () {
+  var retour = new URLSearchParams(location.search).get("return") || "/";
+  location.replace(decodeURIComponent(decodeURIComponent(retour)));
+})();
+</script></head>
+<body style="background:#0b0b0d;color:#fff;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0">
+<p>Redirection directe (mode local, sans attente de publicité)…</p>
+</body></html>

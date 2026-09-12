@@ -1,0 +1,1 @@
+function n(e){return String(e||"").normalize("NFD").replace(new RegExp("\\p{Diacritic}","gu"),"").toLocaleLowerCase("pt-BR").trim()}function i(e,t){const r=n(t);return r?n(`${e.name} ${e.region} ${e.slug} ${e.tone}`).includes(r):!0}export{i as s};
