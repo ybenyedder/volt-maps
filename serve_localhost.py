@@ -47,11 +47,14 @@ class Gestionnaire(BaseHTTPRequestHandler):
     def _cors(self):
         # une partie du code JS construit des URLs http://localhost:8907 en dur :
         # ouvertes depuis 127.0.0.1:8907 cela devient une requête origine croisée.
-        # On n'autorise QUE les origines locales : réfléchir n'importe quelle
-        # origine avec credentials laisserait n'importe quel site web lu dans le
-        # navigateur lire le cache et les jetons d'activation (localhost inclus).
+        # Sont autorisées : les origines locales (usage du miroir) et les domaines
+        # du jeu (le site officiel peut charger ses builds via le tunnel nocoin).
+        # Réfléchir n'importe quelle origine avec credentials laisserait n'importe
+        # quel site web lire le serveur — on reste en liste blanche.
         origine = self.headers.get("Origin") if hasattr(self, "headers") else None
-        if origine and re.fullmatch(r"https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?", origine):
+        if origine and re.fullmatch(
+                r"https?://([a-z0-9-]+\.)*(tavvkkj\.xyz|voltmaps\.xyz|webtvmedia\.net"
+                r"|localhost|127\.0\.0\.1|\[::1\])(:\d+)?", origine.lower()):
             self.send_header("Access-Control-Allow-Origin", origine)
             self.send_header("Access-Control-Allow-Credentials", "true")
             self.send_header("Access-Control-Allow-Headers", "*")
@@ -88,9 +91,20 @@ class Gestionnaire(BaseHTTPRequestHandler):
             corps = f.read()
         ext = os.path.splitext(chemin)[1].lower()
         ctype = TYPE_SUP.get(ext) or mimetypes.guess_type(chemin)[0] or "application/octet-stream"
+        # NB : dans ce miroir les fichiers ".br" ont été décompressés en place par
+        # le pipeline (le "framework.js.br" est du JavaScript pur). Le framework
+        # est chargé par une balise <script> : il doit donc partir en
+        # text/javascript SANS Content-Encoding, sinon les navigateurs (nosniff)
+        # refusent de l'exécuter — cas du tunnel nocoin où aucune couche JS locale
+        # ne vient le traiter. Les autres .br restent en octet-stream brut.
+        encodage = None
+        if ext == ".js.br" or chemin.lower().endswith(".js.br"):
+            ctype = "text/javascript"
         try:
             self.send_response(code)
             self.send_header("Content-Type", ctype)
+            if encodage:
+                self.send_header("Content-Encoding", encodage)
             self.send_header("Content-Length", str(len(corps)))
             self.send_header("Cache-Control", self._cache_control(chemin))
             self.send_header("X-Content-Type-Options", "nosniff")
