@@ -1186,16 +1186,23 @@
     }, 120000);
 
     $("statut").textContent = "Téléchargement du moteur…";
-    var script = document.createElement("script");
-    script.src = dossier + "reborn-shared.loader.js";
-    script.onerror = function () {
-      clearTimeout(filet);
-      afficherErreur("Loader introuvable",
-        "Le fichier " + dossier + "reborn-shared.loader.js n'a pas pu être chargé. " +
-        "Le serveur local est-il lancé sur le port 8907 ?");
-    };
-    script.onload = function () {
-      createUnityInstance($("unity-canvas"), {
+    /* garde anti double-injection : un 2e lancement dans la même page (bouton
+       « Réessayer », relance) réévaluerait le loader — si une version déclare
+       createUnityInstance en liaison lexicale (let), la redéclaration lève
+       « Identifier has already been declared » et tue le lancement. */
+    var lancerApresLoader = function () {
+      /* un loader let-style n'attache rien à window : on promeut la liaison */
+      if (typeof window.createUnityInstance !== "function"
+          && typeof createUnityInstance === "function")
+        window.createUnityInstance = createUnityInstance;
+      if (typeof window.createUnityInstance !== "function") {
+        clearTimeout(filet);
+        afficherErreur("Loader illisible",
+          "reborn-shared.loader.js n'a pas défini createUnityInstance " +
+          "(version en cache corrompue ?). Vide le cache Unity puis réessaie.");
+        return;
+      }
+      window.createUnityInstance($("unity-canvas"), {
         dataUrl: dossier + "reborn-shared.data.br?v=14",
         frameworkUrl: dossier + "reborn-shared.framework.js.br?v=12",
         codeUrl: dossier + "reborn-shared.wasm.br",
@@ -1220,7 +1227,23 @@
         afficherErreur("Le moteur n'a pas pu démarrer", String(err).slice(0, 300));
       });
     };
-    document.body.appendChild(script);
+    if (typeof window.createUnityInstance === "function") {
+      lancerApresLoader();   /* loader déjà en place : relance propre */
+    } else {
+      var script = document.createElement("script");
+      /* ?v=3 : les caches (navigateur immutable 1 an + edge Cloudflare) indexent
+         par URL complète — le versionnement évite de servir un vieux loader
+         expérimental dont la redéclaration casse les lancements suivants. */
+      script.src = dossier + "reborn-shared.loader.js?v=3";
+      script.onerror = function () {
+        clearTimeout(filet);
+        afficherErreur("Loader introuvable",
+          "Le fichier " + dossier + "reborn-shared.loader.js n'a pas pu être chargé. " +
+          "Le serveur local est-il lancé sur le port 8907 ?");
+      };
+      script.onload = lancerApresLoader;
+      document.body.appendChild(script);
+    }
   }
 
   /* ---------- note : le popup « Site non officiel » est dessiné par le jeu ----------
