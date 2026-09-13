@@ -97,6 +97,31 @@ rapatrié) et `miami` (contenu supprimé en amont) ne fonctionnent pas.
 - Gros `.br` : wasm/data non compressés, framework = JS brut.
 - Serveur à lancer **détaché** (`setsid nohup … &`).
 
+## Écran gris après chargement — diagnostic (13 sept. 2026)
+
+Trois causes distinctes, toutes corrigées dans `telechargement/index.html` :
+
+1. **IP LAN en HTTP** (`http://192.168.1.87:8907`) : pas un contexte sécurisé →
+   le moteur refuse (`Insecure connection not allowed`, string du wasm) et le
+   SW de déchiffrement ne peut pas s'enregistrer. **Correctif** : le launcher
+   redirige automatiquement vers le tunnel `https://nocoin.webtvmedia.net`
+   (seul `localhost` reste servi en direct).
+2. **Geste utilisateur attendu** : après « Installed N scene delta root(s) »,
+   le player attend un vrai clic (politique audio + popup « site non
+   officiel » dessiné par le jeu) avant de dessiner le menu — sans lui, canvas
+   gris figé. **Correctif** : invite « ▶ Click in the game to start »
+   (`#invite-demarrage`), purement visuelle, masquée dès l'événement
+   `reborn:menuShown` (écouté sur `window`, PAS `document`).
+3. **Launcher « instrumenté » (shim AudioContext, `devicePixelRatio: 1`,
+   `__TVK_ENV__` horloge alignée…)** : le moteur démarrait (`menuShown` émis)
+   mais le **rendu restait figé**. Le launcher simple (celui de ce dépôt)
+   rend le jeu normalement via le tunnel comme en local. La sauvegarde du
+   launcher instrumenté est `index.html.avant-fix-ecran-gris` sur le serveur.
+
+Vérifié le 13 sept. via tunnel : galerie → carte → menu rendu → partie
+complète (runs, pièces, game over) sur Paris ; menu animé sur Tokyo ;
+redirection LAN → tunnel active.
+
 ## Déploiement LAN
 
 ```bash

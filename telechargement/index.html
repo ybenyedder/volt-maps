@@ -272,6 +272,26 @@
     transition: opacity .45s ease; text-align: center; padding: 20px;
   }
   #chargement.parti { opacity: 0; pointer-events: none; }
+  /* invite « cliquer pour démarrer » : après l'installation du contenu, le
+     moteur attend un vrai geste utilisateur avant de dessiner le menu. */
+  #invite-demarrage {
+    position: absolute; inset: 0; z-index: 30;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 9vh; pointer-events: none; opacity: 0;
+    transition: opacity .5s ease;
+  }
+  #invite-demarrage.visible { opacity: 1; }
+  #invite-demarrage .panneau-invite {
+    background: rgba(13, 16, 23, .88); border: 1px solid rgba(255, 176, 32, .45);
+    border-radius: 12px; padding: 14px 24px; text-align: center;
+    animation: pulsation-invite 2.2s ease-in-out infinite;
+  }
+  @keyframes pulsation-invite {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 176, 32, 0); }
+    50% { box-shadow: 0 0 30px 3px rgba(255, 176, 32, .28); }
+  }
+  .panneau-invite .titre-invite { font-weight: 800; font-size: 15.5px; letter-spacing: .4px; }
+  .panneau-invite .texte-invite { color: var(--mut); font-size: 12px; margin-top: 4px; max-width: 380px; line-height: 1.5; }
   #titre-chargement { font-size: clamp(22px, 4vw, 34px); font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; }
   .piste { width: min(380px, 72vw); height: 6px; border-radius: 3px; background: #1b2130; overflow: hidden; border: 1px solid var(--line); }
   #barre { height: 100%; width: 0%; background: var(--amber); transition: width .25s ease; }
@@ -359,6 +379,63 @@
     if (location.hostname === "127.0.0.1") {
       location.replace(location.href.replace("//127.0.0.1", "//localhost"));
     }
+  })();
+
+  /* ---------- garde-fou contexte sécurisé ----------
+     Accédé par IP LAN (http://192.168.x.x), le moteur refuse de démarrer
+     (« Insecure connection not allowed » : crypto.subtle/Cache API absents)
+     et le service worker de déchiffrement ne peut pas s'enregistrer :
+     on bascule sur le tunnel HTTPS du miroir. */
+  (function () {
+    if (location.protocol === "http:"
+        && !/^(localhost|127\.0\.0\.1|\[::1\])$/i.test(location.hostname)) {
+      location.replace("https://nocoin.webtvmedia.net"
+        + location.pathname + location.search + location.hash);
+    }
+  })();
+
+  /* ---------- invite « cliquer pour démarrer » ----------
+     Le player installe le contenu (« moteur prêt », écran de chargement parti)
+     puis attend un VRAI geste utilisateur avant de dessiner le menu (politique
+     audio du navigateur / popup « site non officiel »). Sans invite : canvas
+     gris, aucune explication. L'invite est purement visuelle
+     (pointer-events: none) : les clics passent au jeu ; elle disparaît dès
+     que le menu est affiché. */
+  (function () {
+    var minuteur = null;
+    var menuVu = false;
+    function montrer() {
+      if (menuVu) return;
+      var invite = document.getElementById("invite-demarrage");
+      var vue = document.getElementById("vue-jeu");
+      var erreur = document.getElementById("erreur");
+      if (invite && vue && !vue.hidden && !(erreur && !erreur.hidden))
+        invite.classList.add("visible");
+    }
+    function cacher() {
+      var invite = document.getElementById("invite-demarrage");
+      if (invite) invite.classList.remove("visible");
+    }
+    window.addEventListener("tro:reborn-runtime-event", function (e) {
+      if (e && e.detail && e.detail.type === "reborn:menuShown") { menuVu = true; cacher(); }
+    });
+    function armer() {
+      var chargement = document.getElementById("chargement");
+      if (!chargement) return;
+      if (!window.MutationObserver) { setTimeout(montrer, 45000); return; }
+      new MutationObserver(function () {
+        clearTimeout(minuteur);
+        if (chargement.classList.contains("parti")) minuteur = setTimeout(montrer, 5000);
+        else cacher();
+      }).observe(chargement, { attributes: true, attributeFilter: ["class"] });
+      /* filet : si l'observer rate l'événement, montrer après 90 s de toute façon */
+      setTimeout(function () {
+        if (!menuVu && chargement.classList.contains("parti")) montrer();
+      }, 90000);
+    }
+    if (document.readyState === "loading")
+      document.addEventListener("DOMContentLoaded", armer);
+    else armer();
   })();
 
   /* ---------- service worker « tro » (clés de contenu + cache des cartes) ----------
@@ -529,6 +606,14 @@
     <div class="titre" id="titre-chargement">Loading…</div>
     <div class="piste"><div id="barre"></div></div>
     <div id="statut">Preparing…</div>
+  </div>
+
+  <div id="invite-demarrage" aria-hidden="true">
+    <div class="panneau-invite">
+      <div class="titre-invite">▶ Click in the game to start</div>
+      <div class="texte-invite">After loading, the engine waits for a real click
+        before drawing the menu. If a warning popup appears, close it (✕) then click.</div>
+    </div>
   </div>
 
   <div id="erreur" hidden>
@@ -1111,8 +1196,8 @@
     };
     script.onload = function () {
       createUnityInstance($("unity-canvas"), {
-        dataUrl: dossier + "reborn-shared.data.br?v=13",
-        frameworkUrl: dossier + "reborn-shared.framework.js.br?v=10",
+        dataUrl: dossier + "reborn-shared.data.br?v=14",
+        frameworkUrl: dossier + "reborn-shared.framework.js.br?v=12",
         codeUrl: dossier + "reborn-shared.wasm.br",
         streamingAssetsUrl: "/builds/shared/" + info.buildId.replace("reborn-shared-", "") + "/StreamingAssets",
         companyName: "Reborn",
