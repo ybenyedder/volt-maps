@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Volt Maps · offline mirror</title>
 <meta name="description" content="Volt Maps — open source mirror of the Reborn WebGL player. 100% local, no data collected.">
-<link rel="icon" href="/favicon.webp?v=4">
+  <link rel="icon" href="/favicon.webp?v=4">
+  <script src="/tro-timer.js?v=1" defer></script>
 <style>
   /* ——— Volt Maps · thème « cartouche arcade » — fond encre, accent ambre, typographie pressée ——— */
   :root {
@@ -1329,9 +1330,9 @@
   $("btn-vider").addEventListener("click", viderCacheUnity);
   function quitterJeu() { location.href = "/"; }
   $("btn-retour2").addEventListener("click", quitterJeu);
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !$("vue-jeu").hidden) quitterJeu();
-  });
+  /* Pas de raccourci Échap : les joueurs le pressent en pleine partie
+     (réflexe « pause ») et se retrouvent éjectés du jeu. La sortie reste
+     possible via le bouton retour de la vue jeu. */
 
   /* navigation par hash (clic carte, retour navigateur, lien profond) :
      on recharge pour repartir d'un environnement JS propre */
