@@ -69,6 +69,34 @@ rapatrié) et `miami` (contenu supprimé en amont) ne fonctionnent pas.
 6. Contenu TVKSPK1 déchiffré par le SW (clés de l'enveloppe, handshake ECDH fixe
    `raw/cle_ec_fixe.json`).
 
+## Timer natif LiveSplit (portage de tavvkkj.xyz)
+
+`telechargement/tro-timer.js` (chargé par `index.html` sur les routes
+`/<carte>/reborn/<mode>`) reprend la logique du « Cronômetro nativo » intégré
+au jeu sur tavvkkj.xyz :
+
+- **pilotage par le jeu lui-même** : le framework du build expose
+  `_RebornTimerEvent` qui émet `tro:unity-runtime-event` ; départ sur
+  `reborn:runStarted`, pause « mort » sur `reborn:playerDied` / `saveMeShown` /
+  `runEnded` / `gameEnded`, pause « pièce » sur `reborn:coinCollected`
+  (anti-rebond 380 ms après le départ, 220 ms entre signaux), pause sur
+  `reborn:pause`, reprise sur `reborn:runResumed` (ou `reborn:resume` si la
+  pause venait du jeu, après un délai de grâce 450 ms) ;
+- **machine à états LiveSplit** (NotRunning/Running/Paused/Ended) : split,
+  undo, reset, pause ; anti double-pression 300/600 ms ; retard configurable ;
+- **raccourcis par défaut** Numpad1 (iniciar/split), Numpad3 (resetar),
+  Numpad2 (pular — sans effet, comme l'original), Numpad8 (desfazer),
+  capturables depuis le menu ;
+- **rendu canvas identique** (Century Gothic, dégradé de texte, ombres,
+  couleurs par phase, formats 1 / 00:01 / 0:00:01, précision .2 / .23 / .234) ;
+- **interactions** : glisser pour déplacer, bords ou Maj+glisser pour
+  redimensionner (50–500 × 20–150), double-clic = reset, clic = menu
+  d'options (Ações / Básico / Auto / Overlay / Render / Aparência / Atalhos) ;
+- **popup externe** Document Picture-in-Picture « TRO Timer » ;
+- **réglages dans `tro_settings_v1`** (sous-arbre `nativeTimer`) — la même clé
+  que tavvkkj.xyz : un joueur qui règle son timer là-bas retrouve ses
+  réglages ici, et réciproquement. Les autres clés du JSON sont préservées.
+
 ## Scripts
 
 | script | rôle |
