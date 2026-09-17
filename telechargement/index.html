@@ -1078,6 +1078,61 @@
         console.log("[launch] nonce moteur aligné sur " + cible + " (" + pris_total + " occurrences)");
       } catch (e) { console.log("[launch] patch nonce: " + e); }
     };
+    /* mot du jour (Word Hunt) : le build embarque « RANDOMKZN » comme mot de
+       secours local — c'est lui qui s'affiche lettre par lettre sur les trains,
+       la récupération en ligne étant coupée sur ce miroir. On réécrit la
+       chaîne .NET dans le tas wasm (int32 longueur + UTF-16) vers « VOLTMAPS ».
+       La chaîne internée n'est créée qu'une fois par session ; quelques passes
+       après le menu attrapent les créations tardives. */
+    var MOT_AVANT = "RANDOMKZN", MOT_APRES = "VOLTMAPS";
+    var patcherMotDuJour = function () {
+      try {
+        var M = (instanceUnity && instanceUnity.Module) || globalThis.Module;
+        var tas = M && M.HEAPU8;
+        if (!tas) return 0;
+        var vue = new DataView(tas.buffer);
+        var b0 = MOT_AVANT.charCodeAt(0), b1 = MOT_AVANT.charCodeAt(1);
+        var fin = tas.length - MOT_AVANT.length * 2;
+        var pris = 0;
+        for (var i = 0; i < fin; i += 2) {
+          if (tas[i] !== b0 || tas[i + 1] !== 0 ||
+              tas[i + 2] !== b1 || tas[i + 3] !== 0) continue;
+          var ok = true;
+          for (var j = 2; j < MOT_AVANT.length; j++)
+            if (tas[i + j * 2] !== MOT_AVANT.charCodeAt(j) ||
+                tas[i + j * 2 + 1] !== 0) { ok = false; break; }
+          if (!ok) continue;
+          /* en-tête .NET : la longueur doit correspondre au mot cherché */
+          if (vue.getInt32(i - 4, true) !== MOT_AVANT.length) continue;
+          vue.setInt32(i - 4, MOT_APRES.length, true);
+          for (var k = 0; k < MOT_APRES.length; k++) {
+            tas[i + k * 2] = MOT_APRES.charCodeAt(k);
+            tas[i + k * 2 + 1] = 0;
+          }
+          tas[i + MOT_APRES.length * 2] = 0;
+          tas[i + MOT_APRES.length * 2 + 1] = 0;
+          pris++;
+        }
+        if (pris)
+          console.log("[launch] mot du jour patché : " + MOT_AVANT +
+                      " → " + MOT_APRES + " (" + pris + " occurrence(s))");
+        return pris;      } catch (e) {
+        console.log("[launch] patch mot du jour : " + e);
+        return 0;
+      }
+    };
+    var armerPatchMot = function () {
+      patcherMotDuJour();
+      for (var n = 1; n <= 8; n++)
+        setTimeout(patcherMotDuJour, n * 8000);
+    };
+    window.addEventListener("tro:reborn-runtime-event", function (e) {
+      if (e && e.detail && e.detail.type === "reborn:menuShown" &&
+          !window.__voltMotPatchArme) {
+        window.__voltMotPatchArme = true;   /* une seule salve par page */
+        armerPatchMot();
+      }
+    });
     var pont = {
       authorized: true,
       mode: modeGateway,
