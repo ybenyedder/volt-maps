@@ -461,10 +461,12 @@
       t.setTransform(dpr, 0, 0, dpr, 0, 0);
       t.imageSmoothingEnabled = true;
     }
-    function dessinerTexte(txt, taille, x, y, baseY, couleur, decX, decY, mode, epaisseur) {
-      var m = mesurer(txt, taille);
-      var e = baseY - m.width; /* aligné à droite comme l'original */
+    function dessinerTexte(txt, taille, posX, posY, base, alignement, couleur, decX, decY, mode, epaisseur) {
       if (!txt) return;
+      var m = mesurer(txt, taille);
+      /* « far » (grand texte) : calé à droite contre la base (493 chez
+         l'original) ; « near » (décimales) : position donnée directement */
+      var e = alignement === "far" ? base - m.width : 0;
       setPolice(taille);
       t.textAlign = "center"; t.textBaseline = "alphabetic";
       t.lineJoin = "round"; t.miterLimit = 2;
@@ -473,8 +475,8 @@
       for (var i = 0; i < txt.length; i++) {
         var ch = txt.charAt(i);
         var cw = largeurCar(metriquesPolice(taille), ch, taille);
-        var cx = x + e + cw / 2 + (decX || 0);
-        var cy = y + (decY || 0);
+        var cx = posX + e + cw / 2 + (decX || 0);
+        var cy = posY + (decY || 0);
         if (mode === "stroke") t.strokeText(ch, cx, cy);
         else t.fillText(ch, cx, cy);
         e += cw;
@@ -557,17 +559,17 @@
       var F = rgbaTab(regl.layout.outlineColor, regl.layout.outlineAlpha);
       var q = rgbaTab(regl.layout.shadowColor, regl.layout.shadowAlpha);
       if (regl.layout.dropShadows && q[3] > 0) {
-        dessinerTexte(big, h, E, x, C, rgbaStr(q), 1, 1, "fill");
-        dessinerTexte(small, p, T, x, C, rgbaStr(q), 1, 1, "fill");
-        dessinerTexte(big, h, E, x, C, rgbaStr(q), 2, 2, "fill");
-        dessinerTexte(small, p, T, x, C, rgbaStr(q), 2, 2, "fill");
+        dessinerTexte(big, h, E, x, 493, "far", rgbaStr(q), 1, 1, "fill");
+        dessinerTexte(small, p, T, x, 257, "near", rgbaStr(q), 1, 1, "fill");
+        dessinerTexte(big, h, E, x, 493, "far", rgbaStr(q), 2, 2, "fill");
+        dessinerTexte(small, p, T, x, 257, "near", rgbaStr(q), 2, 2, "fill");
       }
       if (F[3] > 0) {
-        dessinerTexte(big, h, E, x, C, rgbaStr(F), 0, 0, "stroke", 2.1 + h * .055);
-        dessinerTexte(small, p, T, x, C, rgbaStr(F), 0, 0, "stroke", 2.1 + p * .055);
+        dessinerTexte(big, h, E, x, 493, "far", rgbaStr(F), 0, 0, "stroke", 2.1 + h * .055);
+        dessinerTexte(small, p, T, x, 257, "near", rgbaStr(F), 0, 0, "stroke", 2.1 + p * .055);
       }
-      dessinerTexte(big, h, E, x, C, coulGrande, 0, 0, "fill");
-      dessinerTexte(small, p, T, x, C, coulPetite, 0, 0, "fill");
+      dessinerTexte(big, h, E, x, 493, "far", coulGrande, 0, 0, "fill");
+      dessinerTexte(small, p, T, x, 257, "near", coulPetite, 0, 0, "fill");
     }
     function rendre(regl, etat) {
       var larg = regl.timer.width, haut = regl.timer.height;
