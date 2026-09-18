@@ -1211,6 +1211,11 @@
 
     /* Básico */
     var b = sectionMenu("Básico");
+    b.appendChild(champBascule("Ativar cronômetro", reglages.overlay.enabled,
+      function (v) {
+        patchSection("overlay", { enabled: v });
+        if (!v) fermerMenu();
+      }));
     b.appendChild(champBascule("Clique alterna", reglages.behavior.clickToggles,
       function (v) { patchSection("behavior", { clickToggles: v }); }));
     b.appendChild(champBascule("Touch inicia/reseta", reglages.behavior.touchStartReset,
@@ -1397,9 +1402,39 @@
     document.removeEventListener("keydown", fermerMenuSiEscape, true);
   }
 
+  /* ============================ bouton on/off (vue jeu) ============================
+     Permet de masquer complètement le chrono (et de le réactiver alors que
+     l'overlay — donc son menu — est caché). État persisté dans tro_settings_v1. */
+  var boutonToggle = document.createElement("button");
+  boutonToggle.type = "button";
+  boutonToggle.className = "tro-timer-toggle";
+  boutonToggle.setAttribute("aria-label", "Afficher ou masquer le chronomètre");
+  boutonToggle.textContent = "⏱";
+  boutonToggle.addEventListener("click", function () {
+    patchSection("overlay", { enabled: !reglages.overlay.enabled });
+    rafraichirBouton();
+  });
+  styleOverlay.textContent +=
+    ".tro-timer-toggle{position:fixed;left:12px;bottom:12px;z-index:2147483000;" +
+    "display:none;width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.16);" +
+    "background:rgba(10,14,24,.72);color:#edf0f7;font-size:17px;line-height:1;cursor:pointer;" +
+    "backdrop-filter:blur(4px);transition:opacity .15s,border-color .15s}" +
+    ".tro-timer-toggle:hover{border-color:#ffb020}" +
+    ".tro-timer-toggle.inactif{opacity:.45}";
+  function rafraichirBouton() {
+    var actif = routeReborn();
+    boutonToggle.style.display = actif ? "block" : "none";
+    boutonToggle.classList.toggle("inactif", !reglages.overlay.enabled);
+    boutonToggle.title = reglages.overlay.enabled
+      ? "Chronomètre actif — cliquer pour masquer"
+      : "Chronomètre masqué — cliquer pour afficher";
+  }
+
   /* ============================ démarrage ============================ */
   document.body.appendChild(overlay);
+  document.body.appendChild(boutonToggle);
   rafraichir();
+  rafraichirBouton();
   majDrapeauPiece();
   window.addEventListener("pagehide", function () {
     arreterBoucle();
@@ -1414,6 +1449,7 @@
   setInterval(function () {
     var actifAvant = overlay.style.display !== "none";
     if (actifAvant !== overlayActif()) { appliquer(); rendre(); }
+    if (boutonToggle.style.display === "none" === routeReborn()) rafraichirBouton();
     if (etat.phase === "Running" && !rafId) lancerBoucle();
   }, 500);
 })();
