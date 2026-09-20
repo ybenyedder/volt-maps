@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>New Orleans · Pogo — Volt Maps</title>
+<link rel="icon" href="/favicon.webp?v=4">
+<style>
+  html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #game canvas { width: 100%; height: 100%; display: block; outline: 0; background: #05030a; }
+  #pogo-barre {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(420px, 72vw); text-align: center; color: #9aa3b8;
+    font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  #pogo-barre-vide {
+    height: 4px; margin-top: 10px; background: #1a2030; border-radius: 2px; overflow: hidden;
+  }
+  #pogo-barre-plein { height: 100%; width: 0; background: #ffb020; transition: width .2s; }
+  #pogo-erreur {
+    position: fixed; inset: 0; display: none; place-items: center;
+    background: rgba(5, 3, 10, .92); color: #edf0f7;
+    font: 14px/1.6 "Segoe UI", system-ui, sans-serif; text-align: center; padding: 24px;
+  }
+  #pogo-erreur.visible { display: grid; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="pogo-barre">
+  <span id="pogo-texte">Chargement de New Orleans (pogo)… ≈ 43 Mo</span>
+  <div id="pogo-barre-vide"><div id="pogo-barre-plein"></div></div>
+</div>
+<div id="pogo-erreur"><p id="pogo-erreur-msg"></p></div>
+<script src="/pogo/commun.js?v=3"></script>
+<script src="/pogo/sauvegarde.js?v=2"></script>
+<script src="/pogo/unity/4399.js"></script>
+<script src="/pogo/unity/UnityLoader.2019.2.js?v=2"></script>
+<script>
+(function () {
+  var filet = null;
+  function demarrer() {
+    filet = window.pogoFilet();
+    window.pogoUI.message("Chargement de New Orleans (pogo)… ≈ 43 Mo (première visite : 1 à 2 min, ensuite en cache)", 0);
+    window.pogoPatchCompression(window.UnityLoader);
+    window.unityGame = window.UnityLoader.instantiate("game", "/pogo/neworleans/build.json", {
+      onProgress: function (instance, progres) {
+        window.__pogoProgres = progres;
+        window.pogoUI.message(
+          progres < 1 ? "Chargement… " + Math.round(progres * 100) + "%"
+                      : "Initialisation du moteur…",
+          progres * 100);
+        if (progres >= 0.95) clearTimeout(filet);
+      },
+      Module: {
+        preRun: [function () {
+          try { window.pogoInjecterSauvegarde(
+            (window.unityGame && window.unityGame.Module) || null); } catch (e) {}
+        }],
+        onRuntimeInitialized: function () {
+          var barre = document.getElementById("pogo-barre");
+          if (barre) barre.style.display = "none";
+        }
+      }
+    });
+  }
+  window.pogoChargerSauvegarde().then(demarrer, demarrer);
+})();
+</script>
+</body>
+</html>

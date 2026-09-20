@@ -11,3 +11,8 @@ __pycache__/
 # secrets locaux — ne jamais publier
 cle_activation.json
 telechargement/maps.json
+
+# builds pogo lourds — à récupérer via `python3 pogo_outils.py telecharger`
+telechargement/pogo/*/Build/
+telechargement/pogo/*/*.unityweb
+telechargement/pogo/shared/

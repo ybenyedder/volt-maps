@@ -1,0 +1,25 @@
+﻿{
+    "id":  "transylvania-reborn",
+    "buildVersion":  "20260701-151110-2adf9a3bcaa1-a8fb0fa49515",
+    "assetVersion":  "20260701-151110-2adf9a3bcaa1-a8fb0fa49515",
+    "mapSlug":  "transylvania",
+    "name":  "Transylvania Reborn",
+    "description":  "Transylvania map running on the Reborn WebGL build.",
+    "thumbnailUrl":  "/images/backgrounds/transylvania-reborn-cover.png?v=1",
+    "dataParts":  [
+                      "Build/transylvania.data.part001",
+                      "Build/transylvania.data.part002",
+                      "Build/transylvania.data.part003",
+                      "Build/transylvania.data.part004",
+                      "Build/transylvania.data.part005"
+                  ],
+    "frameworkUrl":  "Build/transylvania.framework.js",
+    "codeUrl":  "Build/transylvania.wasm",
+    "wasmFrameworkUrl":  "Build/transylvania.framework.js",
+    "wasmCodeUrl":  "Build/transylvania.wasm",
+    "loaderUrl":  "Build/transylvania.loader.js",
+    "streamingAssetsUrl":  "StreamingAssets",
+    "companyName":  "Kiloo Games",
+    "productName":  "Subway Surf",
+    "productVersion":  "1.105.0"
+}

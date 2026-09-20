@@ -84,6 +84,14 @@ class Gestionnaire(BaseHTTPRequestHandler):
             return "public, max-age=2592000"          # vignettes : 30 j
         if "/reborn/content/" in chemin or "/builds/" in chemin:
             return "public, max-age=86400"            # contenu/builds : 24 h
+        if "/pogo/" in chemin:
+            # builds pogo immuables : le navigateur doit les garder (jusqu'à
+            # 160 Mo par carte, sans ça chaque lancement re-télécharge tout).
+            # Les pages/manifests restent no-cache pour que les correctifs
+            # passent immédiatement.
+            if chemin.endswith(".html") or chemin.endswith(".json"):
+                return "no-cache"
+            return "public, max-age=2592000, immutable"
         return "no-cache"                             # html, api, json
 
     def _servir_fichier(self, chemin, code=200):

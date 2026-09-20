@@ -24,11 +24,44 @@ Hors ligne par défaut (`ONLINE=1` réautorise le réseau en secours). Puis ouvr
 
 ```
 http://localhost:8907/<carte>/reborn/enhanced   ex. /paris/reborn/enhanced
+http://localhost:8907/pogo/<carte>/?mode=pogo   ex. /pogo/transylvania/
 ```
 
 96 slugs dans le listing, **81 jouables** (les autres : slugs APK historiques +
 `rio-de-janeiro` qui casse le SPA). Hors ligne : `journey-to-the-east` (jamais
 rapatrié) et `miami` (contenu supprimé en amont) ne fonctionnent pas.
+
+### Mode Pogo (builds ashuni.lol, ajout du 20 sept. 2026)
+
+26 cartes proposent en plus un mode **Pogo** : un badge ambre `POGO` sur la
+carte de la galerie, un 3ᵉ choix dans la modale, et une route
+`/<carte>/reborn/pogo` qui redirige vers `/pogo/<slug>/?mode=pogo` (page de jeu
+dédiée). Builds récupérés d'ashuni.lol — deux architectures :
+
+- **reborn** (transylvania) : `reborn.json` + loader/framework/wasm/data parts
+  bootés par `createUnityInstance`, data parts fusionnées en blob ;
+- **classic** (25 autres) : builds Unity 2018/2019 pilotés par
+  `UnityLoader.2019.2.js` (version ashuni patchée pour les builds
+  « modularisés ») + un manifest `build.json`. Quatre variantes de loader
+  modularisé selon les cartes : `4399.js`, `4399.z.js`, `4399.sf.js`,
+  `subwaySurf14.08.js` ; miami est un build standard.
+
+Points clés :
+
+- le **mode pogo est choisi par le build via l'URL de la page**
+  (`?mode=pogo`, forcé par `commun.js`) — aucun parsing du mode n'existe
+  côté page ;
+- `sauvegarde.bin` (13 971 octets) : la sauvegarde embarquée d'ashuni
+  (personnages débloqués, ~996 M pièces, pas de tuto) est injectée dans le FS
+  Emscripten au `preRun` (`sauvegarde.js`, md5 des variantes d'URL — portage
+  de leur « save100 ») ; sans elle, jeu vierge + tutoriel ;
+- `commun.js` fournit aussi : SDK Poki factice (stub officiel d'ashuni),
+  pont `initPokiBridge`/`commercialBreak`/`rewardedBreak`, décompression
+  tolérante gzip/brotli/clair, neutralisation des overlays « site officiel »
+  et blocage des redirections vers tavvkkj.xyz/ashuni.lol ;
+- les replis asm.js (`*.asm.*.unityweb`) ne sont PAS rapatriés (bangkok,
+  cairo, paris) : tous les navigateurs modernes passent par wasm ;
+- outil : `python3 pogo_outils.py inventaire|telecharger|pages`.
 
 ## Ce que fait le serveur (`serve_localhost.py`)
 
@@ -108,6 +141,7 @@ au jeu sur tavvkkj.xyz :
 | `mesure_fps.py` | chargement + FPS par carte |
 | `diag_boot.py` | diagnostic d'un boot bloqué |
 | `activation_locale.py` | activation locale (enveloppe + jeton) |
+| `pogo_outils.py` | cartes pogo : inventaire / téléchargement / génération des pages |
 | `changer_texte_popup.py` | personnalise le popup d'avertissement (toutes langues) |
 | `chasse_cle.py` / `brute_force_cle.py` | recherche de la clé publique embarquée (archive) |
 

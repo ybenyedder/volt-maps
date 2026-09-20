@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Transylvania · Pogo — Volt Maps</title>
+<link rel="icon" href="/favicon.webp?v=4">
+<style>
+  html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; }
+  #unity-container { position: fixed; inset: 0; background: #05030a; }
+  #unity-canvas { display: block; width: 100%; height: 100%; outline: 0; background: #05030a; }
+  #pogo-barre {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(420px, 72vw); text-align: center; color: #9aa3b8;
+    font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  #pogo-barre-vide {
+    height: 4px; margin-top: 10px; background: #1a2030; border-radius: 2px; overflow: hidden;
+  }
+  #pogo-barre-plein { height: 100%; width: 0; background: #ffb020; transition: width .2s; }
+  #pogo-erreur {
+    position: fixed; inset: 0; display: none; place-items: center;
+    background: rgba(5, 3, 10, .92); color: #edf0f7;
+    font: 14px/1.6 "Segoe UI", system-ui, sans-serif; text-align: center; padding: 24px;
+  }
+  #pogo-erreur.visible { display: grid; }
+</style>
+</head>
+<body>
+<div id="unity-container">
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <div id="pogo-barre">
+    <span id="pogo-texte">Chargement de Transylvania (pogo)… ≈ 161 Mo</span>
+    <div id="pogo-barre-vide"><div id="pogo-barre-plein"></div></div>
+  </div>
+  <div id="pogo-erreur"><p id="pogo-erreur-msg"></p></div>
+</div>
+<script src="/pogo/commun.js?v=3"></script>
+<script>
+(function () {
+  var manifest = null;
+
+  function fichier(nom) {
+    var base = "/pogo/transylvania/Build/";
+    var propre = String(nom || "").replace(/^Build\//, "").split("?")[0];
+    return base + propre;
+  }
+
+  function fusionnerParties(urls) {
+    var suite = Promise.resolve([]);
+    return urls.reduce(function (chaine, url, ix) {
+      return chaine.then(function (tampons) {
+        window.pogoUI.message("Téléchargement du contenu " + (ix + 1) + "/" +
+          urls.length + "…", (ix / urls.length) * 25);
+        return fetch(url).then(function (rep) {
+          if (!rep.ok) throw new Error("HTTP " + rep.status + " — " + url);
+          return rep.arrayBuffer();
+        }).then(function (tampon) {
+          tampons.push(tampon);
+          return tampons;
+        });
+      });
+    }, suite).then(function (tampons) {
+      window.pogoUI.message("Fusion du contenu…", 28);
+      var total = 0;
+      tampons.forEach(function (t) { total += t.byteLength; });
+      var fusion = new Uint8Array(total);
+      var decalage = 0;
+      tampons.forEach(function (t) {
+        fusion.set(new Uint8Array(t), decalage);
+        decalage += t.byteLength;
+      });
+      return URL.createObjectURL(new Blob([fusion],
+        { type: "application/octet-stream" }));
+    });
+  }
+
+  fetch("/pogo/transylvania/reborn.json", { cache: "no-store" })
+    .then(function (rep) {
+      if (!rep.ok) throw new Error("reborn.json HTTP " + rep.status);
+      return rep.json();
+    })
+    .then(function (m) {
+      manifest = m;
+      var version = encodeURIComponent(m.assetVersion || m.buildVersion || "reborn");
+      var dataUrls = (m.dataParts || []).map(function (n) {
+        return fichier(n) + "?v=tagbot1";
+      });
+      return fusionnerParties(dataUrls).then(function (dataBlobUrl) {
+        window.pogoUI.message("Démarrage du moteur…", 30);
+        return new Promise(function (resoudre, rejeter) {
+          var script = document.createElement("script");
+          script.src = fichier(m.loaderUrl);
+          script.onload = function () { resoudre(dataBlobUrl); };
+          script.onerror = function () { rejeter(new Error("loader introuvable")); };
+          document.body.appendChild(script);
+        }).then(function (dataBlobUrl) {
+          var canvas = document.getElementById("unity-canvas");
+          var filet = window.pogoFilet();
+          return window.createUnityInstance(canvas, {
+            dataUrl: dataBlobUrl,
+            frameworkUrl: fichier(m.frameworkUrl) + "?v=" + version,
+            codeUrl: fichier(m.codeUrl) + "?v=" + version,
+            streamingAssetsUrl: "/pogo/transylvania/" +
+              String(m.streamingAssetsUrl || "StreamingAssets").replace(/^\//, ""),
+            companyName: m.companyName || "Kiloo Games",
+            productName: m.productName || "Subway Surf",
+            productVersion: m.productVersion || "1.105.0",
+            autoSyncPersistentDataPath: false,
+            cacheControl: function () { return "no-store"; },
+            devicePixelRatio: 1,
+            matchWebGLToCanvasSize: true,
+            webglContextAttributes: {
+              preserveDrawingBuffer: false, antialias: false, alpha: false,
+              powerPreference: "high-performance", desynchronized: true
+            }
+          }, function (progres) {
+            window.__pogoProgres = progres;
+            var pct = 30 + progres * 70;
+            window.pogoUI.message(
+              "Chargement… " + Math.round(pct) + "%", pct);
+            if (progres >= 0.98) {
+              clearTimeout(filet);
+              var barre = document.getElementById("pogo-barre");
+              if (barre) barre.style.display = "none";
+            }
+          });
+        });
+      });
+    })
+    .then(function (instance) {
+      window.unityInstance = instance;
+      var barre = document.getElementById("pogo-barre");
+      if (barre) barre.style.display = "none";
+    })
+    .catch(function (err) {
+      window.pogoUI.erreur(String(err && err.message || err).slice(0, 300));
+    });
+})();
+</script>
+</body>
+</html>

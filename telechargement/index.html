@@ -185,6 +185,10 @@
     color: rgba(255, 255, 255, .8);
     border: 1px solid rgba(255, 255, 255, .24); border-radius: 3px; padding: 1px 6px;
   }
+  .nom .badge-pogo {
+    margin-left: 0; margin-right: -2px;
+    color: #ffb020; border-color: rgba(255, 176, 32, .55); background: rgba(255, 176, 32, .1);
+  }
   .nom .version {
     display: inline-block; margin-left: 6px; vertical-align: 1px;
     font-family: ui-monospace, Consolas, monospace;
@@ -593,6 +597,11 @@
       <span><span class="t">Training</span>
       <div class="d">Training mode: learn the tracks and tricks.</div></span>
     </a>
+    <a class="choix" id="choix-pogo" href="#" hidden>
+      <span class="ico">P</span>
+      <span><span class="t">Pogo</span>
+      <div class="d">Pogo mode — ride the pogo stick!</div></span>
+    </a>
     <div class="rang-actions">
       <button class="btn btn-secondaire" id="modale-fermer">Cancel</button>
     </div>
@@ -752,8 +761,29 @@
 
   var MODES = { enhanced: "original", training: "training", legacy: null };
 
+  /* ——— cartes pogo (builds tiers intégrés au miroir) ———
+     slug du miroir -> slug du dossier /pogo/<slug>/ ; toute la mécanique
+     (page de jeu dédiée, ?mode=pogo, sauvegarde injectée) y est décrite
+     dans pogo_outils.py à la racine du dépôt. */
+  var CARTES_POGO = {
+    "bangkok": "bangkok", "moscow": "moscow", "transylvania": "transylvania",
+    "berlin": "berlin", "barcelona": "barcelona", "beijing": "beijing",
+    "buenos-aires": "buenosaires", "cairo": "cairo", "havana": "havana",
+    "hong-kong": "hongkong", "iceland": "iceland", "london": "london",
+    "mexico": "mexico", "new-orleans": "neworleans", "new-york": "newyork",
+    "paris": "paris", "rio": "rio", "saint-petersburg": "saintpetersburg",
+    "tokyo": "tokyo", "venice": "venice", "winter-holiday": "winterholiday",
+    "zurich": "zurich", "houston": "houston", "miami": "miami",
+    "san-francisco": "sanfrancisco", "monaco": "monaco"
+  };
+
+  function urlPogo(slug) {
+    var cible = CARTES_POGO[slug];
+    return cible ? "/pogo/" + cible + "/?mode=pogo" : null;
+  }
+
   function modeDepuisHash() {
-    var m = location.hash.match(/^#jouer=([\w-]+)(?:\/(enhanced|training|legacy))?$/);
+    var m = location.hash.match(/^#jouer=([\w-]+)(?:\/(enhanced|training|legacy|pogo))?$/);
     if (!m || !cartes[m[1]]) return null;
     return { slug: m[1], mode: m[2] || "enhanced" };
   }
@@ -764,7 +794,7 @@
       if (cartes[segs[i]]) {
         var suit = segs[i + 1];
         if (suit === "reborn") suit = segs[i + 2];
-        var mode = (suit === "enhanced" || suit === "training" || suit === "legacy")
+        var mode = (suit === "enhanced" || suit === "training" || suit === "legacy" || suit === "pogo")
           ? suit : "enhanced";
         return { slug: segs[i], mode: mode };
       }
@@ -779,6 +809,9 @@
     $("modale-nom").textContent = nomAffiche(slug);
     $("choix-enhanced").href = "/" + slug + "/reborn/enhanced";
     $("choix-training").href = "/" + slug + "/reborn/training";
+    var pogo = urlPogo(slug);
+    $("choix-pogo").hidden = !pogo;
+    if (pogo) $("choix-pogo").href = pogo;
     $("modale").hidden = false;
   }
   $("modale-fermer").addEventListener("click", function () {
@@ -831,6 +864,7 @@
       vignette.insertAdjacentHTML("beforeend",
         '<div class="scrim"></div>' +
         '<div class="nom">' + nomAffiche(slug) +
+        (CARTES_POGO[slug] ? '<span class="region badge-pogo">POGO</span>' : "") +
         (meta && meta.r ? '<span class="region">' + meta.r + "</span>" : "") +
         (meta && meta.v ? '<span class="version">v' + meta.v + "</span>" : "") +
         "</div>");
@@ -1353,6 +1387,10 @@
       cible = routeDepuisChemin();
       if (cible) history.replaceState(null, "",
         "/" + cible.slug + "/reborn/" + cible.mode);
+    }
+    if (cible && cible.mode === "pogo") {
+      var pogo = urlPogo(cible.slug);
+      if (pogo) { location.replace(pogo); return; }
     }
     if (cible) lancerCarte(cible.slug, cible.mode);
   }).catch(function (e) {
