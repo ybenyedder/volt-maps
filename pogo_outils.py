@@ -471,21 +471,37 @@ BRANDING = [
     (b'\x0b\x00\x00\x00Ashuni     \x00', b'\x0b\x00\x00\x00.gg/tagbot \x00'),
     (b'\x0a\x00\x00\x00Ashuni    \x00', b'\x0a\x00\x00\x00.gg/tagbot\x00'),
     (b'VersionByAshuni ', b'VersionBytagbot '),
+    # tables de localisation COMPRESSÉES des builds brotli (barcelona, beijing,
+    # buenosaires, havana, houston, iceland, london, mexico, miami, monaco,
+    # neworleans, saintpetersburg, sanfrancisco, zurich) : valeur « Ashuni »
+    # (FRONT_UI_TAPTEE détourné par ashuni) avec espace final, 7 octets —
+    # même longueur obligatoire, on rend « tagbot ».
+    (b'Ashuni ', b'tagbot '),
 ]
+VERSION_BRANDING = "tagbot2-20261002"
 
 
 def branding():
     """Remplace « Ashuni » par « join .gg/tagbot » dans tous les builds (même
-    longueur d'octets) et bump le ?v= des manifests pour casser le cache."""
+    longueur d'octets) et bump le ?v= des manifests pour casser le cache.
+    Les data files brotli/gzip sont décompressés, patchés puis recompressés
+    (les motifs vivent dans l'archive claire, pas dans le flux compressé)."""
     import glob as _glob
     fichiers = (sorted(_glob.glob(os.path.join(POGO, '*', '*.data.unityweb')))
                 + [os.path.join(POGO, 'transylvania', 'Build',
                                 'transylvania.data.part005')])
+    modifies = set()
     for chemin in fichiers:
         if not os.path.isfile(chemin):
             continue
+        slug = os.path.basename(os.path.dirname(chemin))
         with open(chemin, 'rb') as fh:
-            data = fh.read()
+            brut = fh.read()
+        try:
+            data, compresse = _decompresser_unityweb(brut)
+        except Exception:
+            # tranche brute (data part de transylvania...) : octets directs
+            data, compresse = brut, False
         original = data
         remplacements = 0
         for avant, apres in BRANDING:
@@ -495,23 +511,35 @@ def branding():
                 remplacements += n
         if data != original:
             with open(chemin, 'wb') as fh:
-                fh.write(data)
+                if compresse:
+                    import brotli
+                    fh.write(brotli.compress(data, quality=9))
+                else:
+                    fh.write(data)
+            modifies.add(slug)
         reste = data.count(b'Ashuni')
         print(f"{os.path.relpath(chemin, POGO)}: {remplacements} remplacements"
               + (f" ({reste} 'Ashuni' restants)" if reste else ""))
-    # bump des ?v= des dataUrl dans les build.json (fichiers servis immutable)
-    for chemin in sorted(_glob.glob(os.path.join(POGO, '*', 'build.json'))):
+    # bump du ?v= des dataUrl UNIQUEMENT des builds modifiés (les data sont
+    # servies immutable : sans bump, les navigateurs garderaient l'ancien)
+    for slug in sorted(modifies):
+        if slug == 'transylvania':
+            _bump_index_reborn_version('transylvania', VERSION_BRANDING)
+            continue
+        chemin = os.path.join(POGO, slug, 'build.json')
+        if not os.path.isfile(chemin):
+            continue
         with open(chemin, encoding='utf-8-sig') as fh:
             m = json.load(fh)
         url = m.get('dataUrl', '')
         if not url:
             continue
-        nouveau = url.split('?')[0] + '?v=tagbot-20260920'
+        nouveau = url.split('?')[0] + '?v=' + VERSION_BRANDING
         if nouveau != url:
             m['dataUrl'] = nouveau
             with open(chemin, 'w', encoding='utf-8') as fh:
                 json.dump(m, fh, indent=2)
-            print(f"{os.path.relpath(chemin, POGO)}: dataUrl -> ?v=tagbot-20260920")
+            print(f"{slug}/build.json: dataUrl -> ?v={VERSION_BRANDING}")
 
 
 # ——— « pogo au sol » : plus de pickups PogoStick dans les rails ———
@@ -757,7 +785,7 @@ def _nospawn_reborn(slug):
     print(f"{slug}: poids pogo -> 0 + {points_total} points de spawn désactivés, parts re-découpées, ?v -> {VERSION_NOSPAWN}")
 
 
-def _bump_index_reborn(slug):
+def _bump_index_reborn_version(slug, version):
     """Bump du ?v= des data parts dans index.html (fichier no-cache, le reste
     est servi immutable 30 j). L'URL est construite en deux morceaux
     (« fichier(n) + "?v=..." ») : on remplace aussi la query seule."""
@@ -765,11 +793,15 @@ def _bump_index_reborn(slug):
     index = os.path.join(dossier, "index.html")
     with open(index, encoding="utf-8") as fh:
         html = fh.read()
-    html2 = re.sub(r'\.data\.part001\?v=[^"\']+', f'.data.part001?v={VERSION_NOSPAWN}', html)
-    html2 = re.sub(r'fichier\(n\) \+ "\?v=[^"\']+"', f'fichier(n) + "?v={VERSION_NOSPAWN}"', html2)
+    html2 = re.sub(r'\.data\.part001\?v=[^"\']+', f'.data.part001?v={version}', html)
+    html2 = re.sub(r'fichier\(n\) \+ "\?v=[^"\']+"', f'fichier(n) + "?v={version}"', html2)
     if html2 != html:
         with open(index, "w", encoding="utf-8") as fh:
             fh.write(html2)
+
+
+def _bump_index_reborn(slug):
+    _bump_index_reborn_version(slug, VERSION_NOSPAWN)
 
 
 def nospawn(slugs=None):
