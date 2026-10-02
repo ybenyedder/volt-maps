@@ -37,6 +37,14 @@
      pokiReady pour que initPokiBridge le fasse à l'enregistrement. */
   window.showUnitywebNoSupport = window.showUnitywebNoSupport ||
     function () { console.warn("Unity web support/load failed"); };
+  window.showUnitywebNoSupport = (function (native) {
+    return function () {
+      try { native.apply(this, arguments); } catch (e) {}
+      window.pogoMontrerReparation(
+        "Le chargement du moteur a échoué (cache du navigateur ?). " +
+        "Clique sur « Réparer » pour effacer les données et recharger.");
+    };
+  })(window.showUnitywebNoSupport);
   window.initPokiBridge = function (objet) {
     window.pokiBridge = objet;
     /* les breaks sont définis SURTOUT quand init a déjà résolu (SDK factice :
@@ -297,6 +305,26 @@
     chip.innerHTML = 'Pogo : <b id="pogo-touche-valeur"></b> &nbsp;·&nbsp; cliquer pour changer';
     document.body.appendChild(chip);
     majEtiquette();
+
+    /* bouton « Réparer » de l'overlay d'erreur (injecté ici, les pages ne
+       l'embarquent pas dans leur gabarit) */
+    var surcouche = document.getElementById('pogo-erreur');
+    if (surcouche && !document.getElementById('pogo-reparer')) {
+      var bouton = document.createElement('button');
+      bouton.id = 'pogo-reparer';
+      bouton.type = 'button';
+      bouton.textContent = 'Réparer et recharger';
+      bouton.style.cssText =
+        'display:none;margin:14px auto 0;padding:10px 22px;font:600 14px/1.4 ' +
+        '"Segoe UI",system-ui,sans-serif;color:#0a0c11;background:#ffb020;' +
+        'border:0;border-radius:8px;cursor:pointer;';
+      bouton.addEventListener('click', function () {
+        bouton.disabled = true;
+        bouton.textContent = 'Réparation…';
+        if (typeof window.pogoReparer === 'function') window.pogoReparer();
+      });
+      surcouche.appendChild(bouton);
+    }
   });
 
   /* ——— barre de chargement + erreur ——— */
@@ -312,11 +340,78 @@
       var surcouche = document.getElementById('pogo-erreur');
       var msg = document.getElementById('pogo-erreur-msg');
       if (msg) msg.textContent = String(detail || 'Échec du chargement.');
-      if (surcouche) surcouche.classList.add('visible');
+      if (surcouche) {
+        surcouche.classList.add('visible');
+        var bouton = document.getElementById('pogo-reparer');
+        if (bouton) bouton.style.display = 'inline-block';
+      }
       var barre = document.getElementById('pogo-barre');
       if (barre) barre.style.display = 'none';
     }
   };
+
+  /* ——— auto-réparation : les données du site (sauvegarde idbfs, caches) ———
+     peuvent se corrompre (onglet fermé pendant une écriture, crash moteur) et
+     faire planter le jeu AU DÉMARRAGE sur toutes les cartes, jusqu'à nettoyage.
+     On montre un bouton « Réparer » dès qu'une erreur fatale est détectée :
+     il efface les données locales du jeu sur cette origine puis recharge. */
+  window.pogoReparer = function () {
+    var fini = false;
+    var recharge = function () {
+      if (fini) return;
+      fini = true;
+      try { location.reload(); } catch (e) {}
+    };
+    try { localStorage.clear(); } catch (e) {}
+    var suppressionDb = Promise.resolve();
+    try {
+      if (indexedDB.databases) {
+        suppressionDb = indexedDB.databases().then(function (liste) {
+          return Promise.all(liste.map(function (db) {
+            return new Promise(function (resoudre) {
+              try {
+                var req = indexedDB.deleteDatabase(db.name);
+                req.onsuccess = req.onerror = req.onblocked = resoudre;
+              } catch (e) { resoudre(); }
+            });
+          }));
+        });
+      }
+    } catch (e) {}
+    var suppressionCaches = Promise.resolve();
+    try {
+      if (window.caches && caches.keys) {
+        suppressionCaches = caches.keys().then(function (noms) {
+          return Promise.all(noms.map(function (nom) { return caches.delete(nom); }));
+        });
+      }
+    } catch (e) {}
+    Promise.all([suppressionDb, suppressionCaches]).then(recharge, recharge);
+    setTimeout(recharge, 8000);
+  };
+
+  window.pogoMontrerReparation = function (detail) {
+    var surcouche = document.getElementById('pogo-erreur');
+    if (surcouche && surcouche.classList.contains('visible')) return;
+    window.pogoUI.erreur(detail);
+  };
+
+  window.addEventListener('error', function (ev) {
+    var texte = String((ev && ev.message) || '');
+    if (/null function|RuntimeError|RangeError|abort|out of memory/i.test(texte)) {
+      window.pogoMontrerReparation(
+        "Le jeu a planté (données du navigateur peut-être corrompues). " +
+        "Clique sur « Réparer » pour les effacer et recharger.");
+    }
+  });
+  window.addEventListener('unhandledrejection', function (ev) {
+    var texte = String((ev && ev.reason && (ev.reason.message || ev.reason)) || '');
+    if (/null function|RuntimeError|RangeError|abort|out of memory/i.test(texte)) {
+      window.pogoMontrerReparation(
+        "Le jeu a planté (données du navigateur peut-être corrompues). " +
+        "Clique sur « Réparer » pour les effacer et recharger.");
+    }
+  });
 
   /* ——— sécurité : sans progression notable en 3 min, on affiche une erreur ——— */
   window.pogoFilet = function () {

@@ -761,6 +761,12 @@
 
   var MODES = { enhanced: "original", training: "training", legacy: null };
 
+  /* ——— maps training (builds du repo GitHub « Map-training- ») ———
+     slug de la galerie -> dossier /training/<dossier>/ ; récupérés et
+     intégrés par training_outils.py. Absent de la table = fallback
+     launcher enhanced (mode training). */
+  var TRAINING_MAPS = { "beijing": "beijing" };
+
   /* ——— cartes pogo (builds tiers intégrés au miroir) ———
      slug du miroir -> slug du dossier /pogo/<slug>/ ; toute la mécanique
      (page de jeu dédiée, ?mode=pogo, sauvegarde injectée) y est décrite
@@ -808,7 +814,7 @@
     slugModale = slug;
     $("modale-nom").textContent = nomAffiche(slug);
     $("choix-enhanced").href = "/" + slug + "/reborn/enhanced";
-    $("choix-training").href = "/" + slug + "/reborn/training";
+    $("choix-training").href = TRAINING_MAPS[slug] ? "/training/" + TRAINING_MAPS[slug] + "/" : "/" + slug + "/reborn/training";
     var pogo = urlPogo(slug);
     $("choix-pogo").hidden = !pogo;
     if (pogo) $("choix-pogo").href = pogo;
@@ -979,6 +985,10 @@
 
   function lancerCarte(slug, mode) {
     mode = mode || "enhanced";
+    if (mode === "training" && TRAINING_MAPS[slug]) {
+      location.href = "/training/" + TRAINING_MAPS[slug] + "/";
+      return;
+    }
     var info = cartes[slug];
     if (!info) { alert("Carte inconnue : " + slug); return; }
     var modeGateway = MODES[mode];

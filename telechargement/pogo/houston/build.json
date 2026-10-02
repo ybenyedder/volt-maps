@@ -2,7 +2,7 @@
   "companyName": "Kiloo Games",
   "productName": "Subway Surfers",
   "productVersion": "1.94.0",
-  "dataUrl": "15.data.unityweb?v=tagbot-20260920",
+  "dataUrl": "15.data.unityweb?v=nospawn2-20260921",
   "wasmCodeUrl": "15.wasm.code.unityweb",
   "wasmFrameworkUrl": "../shared/wasm_framework.unityweb",
   "TOTAL_MEMORY": 369098752,

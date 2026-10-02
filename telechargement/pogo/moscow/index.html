@@ -29,11 +29,11 @@
 <body>
 <div id="game"></div>
 <div id="pogo-barre">
-  <span id="pogo-texte">Chargement de Moscow (pogo)… ≈ 74 Mo</span>
+  <span id="pogo-texte">Chargement de Moscow (pogo)… ≈ 53 Mo</span>
   <div id="pogo-barre-vide"><div id="pogo-barre-plein"></div></div>
 </div>
 <div id="pogo-erreur"><p id="pogo-erreur-msg"></p></div>
-<script src="/pogo/commun.js?v=3"></script>
+<script src="/pogo/commun.js?v=4"></script>
 <script src="/pogo/sauvegarde.js?v=2"></script>
 <script src="/pogo/unity/4399.js"></script>
 <script src="/pogo/unity/moscow-runtime-bridge.js"></script>
@@ -43,7 +43,7 @@
   var filet = null;
   function demarrer() {
     filet = window.pogoFilet();
-    window.pogoUI.message("Chargement de Moscow (pogo)… ≈ 74 Mo (première visite : 1 à 2 min, ensuite en cache)", 0);
+    window.pogoUI.message("Chargement de Moscow (pogo)… ≈ 53 Mo (première visite : 1 à 2 min, ensuite en cache)", 0);
     window.pogoPatchCompression(window.UnityLoader);
     window.unityGame = window.UnityLoader.instantiate("game", "/pogo/moscow/build.json", {
       onProgress: function (instance, progres) {

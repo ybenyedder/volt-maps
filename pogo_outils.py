@@ -14,9 +14,15 @@ Usage :
   python3 pogo_outils.py pages                    # (re)génère les index.html
   python3 pogo_outils.py inventaire               # état local des builds
   python3 pogo_outils.py vignettes [slug ...]     # vignettes ashuni
+  python3 pogo_outils.py nospawn [slug ...]       # poids du pickup PogoStick -> 0
 """
+import glob
+import io
 import json
 import os
+import re
+import shutil
+import struct
 import subprocess
 import sys
 
@@ -215,7 +221,7 @@ TEMPLATE_CLASSIC = """<!DOCTYPE html>
   <div id="pogo-barre-vide"><div id="pogo-barre-plein"></div></div>
 </div>
 <div id="pogo-erreur"><p id="pogo-erreur-msg"></p></div>
-<script src="/pogo/commun.js?v=3"></script>
+<script src="/pogo/commun.js?v=4"></script>
 <script src="/pogo/sauvegarde.js?v=2"></script>
 {script_4399}<script src="/pogo/unity/UnityLoader.2019.2.js?v=2"></script>
 <script>
@@ -290,7 +296,7 @@ TEMPLATE_REBORN = """<!DOCTYPE html>
   </div>
   <div id="pogo-erreur"><p id="pogo-erreur-msg"></p></div>
 </div>
-<script src="/pogo/commun.js?v=3"></script>
+<script src="/pogo/commun.js?v=4"></script>
 <script>
 (function () {{
   var manifest = null;
@@ -508,6 +514,276 @@ def branding():
             print(f"{os.path.relpath(chemin, POGO)}: dataUrl -> ?v=tagbot-20260920")
 
 
+# ——— « pogo au sol » : plus de pickups PogoStick dans les rails ———
+# Deux mécanismes de spawn de pickups :
+#   1. le tirage pondéré de PickupManager (MonoBehaviour sérialisé, tableau
+#      `_pickupData` : 12 entrées de 40 octets, poids float à l'octet 36 ;
+#      entrée PickupType.PogoStick = 2048) ;
+#   2. des **PickupSpawnPoint forcés** embarqués dans les sections de piste
+#      (sections `*_pogostick_*`) : MonoBehaviour « PickupSpawnPoint » avec
+#      __forceSpawnPickupType = 2048 (71 dans paris) — ils contournent le
+#      tirage pondéré. C'est EUX qui pondent les bâtons rouges sur les rails.
+# Neutralisation : poids de l'entrée 2048 → 0 + m_Enabled = 0 sur chaque
+# PickupSpawnPoint forcé (Unity n'appelle PAS Awake d'un composant désactivé
+# → jamais enregistré auprès de PickupManager → l'emplacement reste vide).
+# La touche P (StartPogostick) et l'arme directe Espace (transylvania) sont
+# indépendantes et continuent de fonctionner.
+VERSION_NOSPAWN = "nospawn2-20260921"
+TYPE_POGO = 2048
+
+
+def _lire_entrees_webdata(d):
+    """Découpe une archive UnityWebData1.0 en [(chemin, contenu)]."""
+    assert d[:15] == b"UnityWebData1.0", d[:15]
+    hdr = struct.unpack_from("<I", d, 16)[0]
+    off = 20
+    entrees = []
+    while off < hdr:
+        o, s, pl = struct.unpack_from("<III", d, off)
+        off += 12
+        chemin = d[off:off + pl].decode()
+        off += pl
+        entrees.append((chemin, d[o:o + s]))
+    return entrees
+
+
+def _ecrire_entrees_webdata(entrees):
+    """Réassemble une archive UnityWebData1.0 (16 octets de magie, PAS 17)."""
+    taille = 20 + sum(12 + len(c.encode()) for c, _ in entrees)
+    buf = io.BytesIO()
+    buf.write(b"UnityWebData1.0\x00")
+    buf.write(struct.pack("<I", taille))
+    cur = taille
+    for chemin, contenu in entrees:
+        cb = chemin.encode()
+        buf.write(struct.pack("<III", cur, len(contenu), len(cb)))
+        buf.write(cb)
+        cur += len(contenu)
+    for chemin, contenu in entrees:
+        buf.write(contenu)
+    return buf.getvalue()
+
+
+def _patcher_bundle_pogo(blob):
+    """Charge data.unity3d avec UnityPy :
+    - poids de l'entrée PogoStick de PickupManager -> 0 ;
+    - m_Enabled = 0 sur chaque PickupSpawnPoint qui force le PogoStick.
+    Retourne (nouveau blob, poids avant, modifié, points_désactivés)."""
+    import UnityPy
+    env = UnityPy.load(blob)
+    scripts = {}
+    for obj in env.objects:
+        if obj.type.name == "MonoScript":
+            try:
+                scripts[obj.path_id] = obj.read().m_ClassName
+            except Exception:
+                pass
+    cibles = {pid for pid, n in scripts.items() if n == "PickupManager"}
+    points = {pid for pid, n in scripts.items() if n == "PickupSpawnPoint"}
+    if not cibles:
+        return blob, None, False, 0
+    modifie = False
+    poids_avant = None
+    points_desactives = 0
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        brut = obj.get_raw_data()
+        if len(brut) < 32:
+            continue
+        _, pid = struct.unpack_from("<iq", brut, 16)
+        if pid in cibles:
+            # en-tête commun (28) + m_Name + 2 bools + PPtr prefab + float
+            p = 28
+            n = struct.unpack_from("<i", brut, p)[0]
+            p = ((p + 4 + n) + 3) & ~3
+            p += 8 + 12 + 4
+            cnt = struct.unpack_from("<i", brut, p)[0]
+            p += 4
+            if not (0 < cnt < 64):
+                continue
+            for i in range(cnt):
+                base = p
+                p += 40
+                if struct.unpack_from("<i", brut, base)[0] != TYPE_POGO:
+                    continue
+                poids = struct.unpack_from("<f", brut, base + 36)[0]
+                if poids_avant is None:
+                    poids_avant = poids
+                if poids == 0.0:
+                    continue
+                brut = bytearray(brut)
+                struct.pack_into("<f", brut, base + 36, 0.0)
+                brut = bytes(brut)
+                obj.set_raw_data(brut)
+                modifie = True
+        elif pid in points:
+            # en-tête (28) + m_Name + PPtr parent + mode + force
+            if len(brut) < 60:
+                continue
+            p = 28
+            n = struct.unpack_from("<i", brut, p)[0]
+            p = ((p + 4 + n) + 3) & ~3
+            force = struct.unpack_from("<i", brut, p + 16)[0]
+            if force != TYPE_POGO or brut[12] == 0:
+                continue
+            brut = bytearray(brut)
+            brut[12] = 0
+            brut = bytes(brut)
+            obj.set_raw_data(brut)
+            points_desactives += 1
+            modifie = True
+    if not modifie:
+        return blob, poids_avant, False, points_desactives
+    env.file.mark_changed()
+    return env.file.save(packer="lz4"), poids_avant, True, points_desactives
+
+
+def _decompresser_unityweb(d):
+    """Retourne (archive claire, était_compressé). Certains builds ashuni
+    sont livrés en brotli (pas de magic ; on essaie, gzip en secours)."""
+    if d[:8] == b"UnityWeb":
+        return d, False
+    import gzip
+    try:
+        d2 = gzip.decompress(d)
+        if d2[:8] == b"UnityWeb":
+            return d2, True
+    except Exception:
+        pass
+    import brotli
+    d2 = brotli.decompress(d)
+    if d2[:8] != b"UnityWeb":
+        raise ValueError("archive decompressée non reconnue")
+    return d2, True
+
+
+def _nospawn_classic(slug):
+    dossier = os.path.join(POGO, slug)
+    manifest = os.path.join(dossier, "build.json")
+    if not os.path.isfile(manifest):
+        print(f"{slug}: pas de build.json, ignoré")
+        return
+    with open(manifest, encoding="utf-8-sig") as fh:
+        m = json.load(fh)
+    chemin = os.path.join(dossier, m.get("dataUrl", "").split("?")[0])
+    if not os.path.isfile(chemin):
+        print(f"{slug}: data file absent ({chemin})")
+        return
+    with open(chemin, "rb") as fh:
+        d = fh.read()
+    d, compresse = _decompresser_unityweb(d)
+    entrees = _lire_entrees_webdata(d)
+    sortie = []
+    touche = False
+    points_total = 0
+    for chemin_entree, contenu in entrees:
+        if chemin_entree.endswith("data.unity3d"):
+            nouveau, poids, modifie, pts = _patcher_bundle_pogo(contenu)
+            points_total += pts
+            if poids is None:
+                print(f"{slug}: PAS de PickupManager, ignoré")
+                return
+            if modifie:
+                sortie.append((chemin_entree, nouveau))
+                touche = True
+            else:
+                sortie.append((chemin_entree, contenu))
+        else:
+            sortie.append((chemin_entree, contenu))
+    if touche:
+        if not os.path.exists(chemin + ".bak-original"):
+            shutil.copy2(chemin, chemin + ".bak-original")
+        with open(chemin, "wb") as fh:
+            archive = _ecrire_entrees_webdata(sortie)
+            if compresse:
+                import brotli
+                fh.write(brotli.compress(archive, quality=9))
+            else:
+                fh.write(archive)
+        url = m["dataUrl"]
+        m["dataUrl"] = url.split("?")[0] + f"?v={VERSION_NOSPAWN}"
+        with open(manifest, "w", encoding="utf-8") as fh:
+            json.dump(m, fh, indent=2)
+        print(f"{slug}: poids pogo -> 0 + {points_total} points de spawn pogo désactivés, dataUrl -> ?v={VERSION_NOSPAWN}")
+    else:
+        print(f"{slug}: déjà à 0 (rien à faire)")
+
+
+def _nospawn_reborn(slug):
+    dossier = os.path.join(POGO, slug)
+    parties = sorted(p for p in glob.glob(os.path.join(dossier, "Build", "*.data.part*"))
+                     if not p.endswith(".bak-original"))
+    if not parties:
+        print(f"{slug}: pas de data parts, ignoré")
+        return
+    blob = b"".join(open(p, "rb").read() for p in parties)
+    entrees = _lire_entrees_webdata(blob)
+    del blob
+    sortie = []
+    touche = False
+    points_total = 0
+    for chemin_entree, contenu in entrees:
+        if chemin_entree.endswith("data.unity3d"):
+            nouveau, poids, modifie, pts = _patcher_bundle_pogo(contenu)
+            points_total += pts
+            if poids is None:
+                print(f"{slug}: PAS de PickupManager, ignoré")
+                return
+            if modifie:
+                sortie.append((chemin_entree, nouveau))
+                touche = True
+            else:
+                sortie.append((chemin_entree, contenu))
+        else:
+            sortie.append((chemin_entree, contenu))
+    if not touche:
+        _bump_index_reborn(slug)
+        print(f"{slug}: déjà à 0 (rien à faire)")
+        return
+    # sauvegarde des parties d'origine (une seule fois !) puis re-découpage
+    for p in parties:
+        if not os.path.exists(p + ".bak-original"):
+            shutil.copy2(p, p + ".bak-original")
+    nouveau_blob = _ecrire_entrees_webdata(sortie)
+    taille_partie = os.path.getsize(parties[0]) if len(parties) > 1 else 0
+    if taille_partie == 0:
+        taille_partie = 26214400
+    for i, p in enumerate(parties):
+        morceau = nouveau_blob[i * taille_partie:(i + 1) * taille_partie]
+        with open(p, "wb") as fh:
+            fh.write(morceau)
+    _bump_index_reborn(slug)
+    print(f"{slug}: poids pogo -> 0 + {points_total} points de spawn désactivés, parts re-découpées, ?v -> {VERSION_NOSPAWN}")
+
+
+def _bump_index_reborn(slug):
+    """Bump du ?v= des data parts dans index.html (fichier no-cache, le reste
+    est servi immutable 30 j). L'URL est construite en deux morceaux
+    (« fichier(n) + "?v=..." ») : on remplace aussi la query seule."""
+    dossier = os.path.join(POGO, slug)
+    index = os.path.join(dossier, "index.html")
+    with open(index, encoding="utf-8") as fh:
+        html = fh.read()
+    html2 = re.sub(r'\.data\.part001\?v=[^"\']+', f'.data.part001?v={VERSION_NOSPAWN}', html)
+    html2 = re.sub(r'fichier\(n\) \+ "\?v=[^"\']+"', f'fichier(n) + "?v={VERSION_NOSPAWN}"', html2)
+    if html2 != html:
+        with open(index, "w", encoding="utf-8") as fh:
+            fh.write(html2)
+
+
+def nospawn(slugs=None):
+    """Poids du pickup PogoStick -> 0 dans tous les builds (plus de pogo au
+    sol ; la touche pogo et l'arme directe continuent de fonctionner)."""
+    for slug, source in SOURCES.items():
+        if slugs and slug not in slugs:
+            continue
+        if source["type"] == "classic":
+            _nospawn_classic(slug)
+        else:
+            _nospawn_reborn(slug)
+
+
 def taille_carte_mo(slug, source):
     """Taille totale des fichiers de build de la carte, en Mo arrondis."""
     dossier = os.path.join(POGO, slug)
@@ -586,6 +862,8 @@ if __name__ == "__main__":
         telecharger(args or list(SOURCES))
     elif cmd == "branding":
         branding()
+    elif cmd == "nospawn":
+        nospawn(args or None)
     elif cmd == "pages":
         pages(args or None)
     elif cmd == "vignettes":
