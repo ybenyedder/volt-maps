@@ -108,6 +108,12 @@ class Gestionnaire(BaseHTTPRequestHandler):
         encodage = None
         if ext == ".js.br" or chemin.lower().endswith(".js.br"):
             ctype = "text/javascript"
+        # les .wasm.br du build enhanced sont du wasm BRUT (décompressé en place
+        # par le pipeline, cf. note ci-dessus) : sans application/wasm, Unity
+        # passe compileStreaming en échec et retombe sur ArrayBuffer (boot plus
+        # lent + erreur console « Incorrect response MIME type »).
+        if chemin.lower().endswith(".wasm.br") or ext == ".wasm":
+            ctype = "application/wasm"
         try:
             self.send_response(code)
             self.send_header("Content-Type", ctype)
