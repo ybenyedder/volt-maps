@@ -16,3 +16,10 @@ telechargement/maps.json
 telechargement/pogo/*/Build/
 telechargement/pogo/*/*.unityweb
 telechargement/pogo/shared/
+
+# backups des data files avant patch (récupérables via pogo_outils.py telecharger)
+*.bak-original
+# maps training — régénérées via `python3 training_outils.py recuperer`
+telechargement/training/
+# profil navigateur des audits
+.profil_audit/

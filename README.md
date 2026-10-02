@@ -25,6 +25,7 @@ Hors ligne par défaut (`ONLINE=1` réautorise le réseau en secours). Puis ouvr
 ```
 http://localhost:8907/<carte>/reborn/enhanced   ex. /paris/reborn/enhanced
 http://localhost:8907/pogo/<carte>/?mode=pogo   ex. /pogo/transylvania/
+http://localhost:8907/training/<slug>/          ex. /training/beijing/
 ```
 
 96 slugs dans le listing, **81 jouables** (les autres : slugs APK historiques +
@@ -61,7 +62,31 @@ Points clés :
   et blocage des redirections vers tavvkkj.xyz/ashuni.lol ;
 - les replis asm.js (`*.asm.*.unityweb`) ne sont PAS rapatriés (bangkok,
   cairo, paris) : tous les navigateurs modernes passent par wasm ;
-- outil : `python3 pogo_outils.py inventaire|telecharger|pages`.
+- **« pogo au sol » désactivé (21 sept.)** : les pickups PogoStick ont été
+  neutralisés dans les 26 builds (`pogo_outils.py nospawn` — poids du tirage
+  `PickupManager` → 0 + `PickupSpawnPoint` forcés désactivés, backups
+  `*.bak-original`). Le pogo reste accessible via la touche configurable
+  (défaut P, `Game.StartPogostick`) et Espace sur transylvania ;
+- **bouton « Réparer »** (`commun.js` v4) : sur erreur fatale au chargement
+  (cache/idbfs corrompu), un bouton efface localStorage + IndexedDB + Cache
+  Storage de l'origine puis recharge la page ;
+- outil : `python3 pogo_outils.py inventaire|telecharger|pages|nospawn`.
+
+### Mode Training (builds du repo « Map-training- », ajout du 23 sept. 2026)
+
+Les maps training auto-portées du repo GitHub privé du dev sont servies
+depuis `/training/<slug>/` (page Poki + `master-loader.js` + `Build/`) :
+
+- pour l'instant : **beijing** (44 Mo) — la modale de la galerie envoie le
+  bouton « Training » de beijing vers `/training/beijing/` (table
+  `TRAINING_MAPS` dans `telechargement/index.html`) ; les autres cartes
+  gardent le mode training du launcher enhanced ;
+- le `master-loader.js` du repo référence `loaderContainer` sans le déclarer
+  (ReferenceError au démarrage) : le fix est réappliqué à chaque synchro ;
+- règle de cache identique à /pogo/ : builds `immutable` 30 j, pages et
+  manifests `no-cache` ;
+- outil : `python3 training_outils.py recuperer|inventaire` (clone le repo
+  avec le PAT du remote volt-maps, jamais écrit en clair).
 
 ## Ce que fait le serveur (`serve_localhost.py`)
 
@@ -141,7 +166,9 @@ au jeu sur tavvkkj.xyz :
 | `mesure_fps.py` | chargement + FPS par carte |
 | `diag_boot.py` | diagnostic d'un boot bloqué |
 | `activation_locale.py` | activation locale (enveloppe + jeton) |
-| `pogo_outils.py` | cartes pogo : inventaire / téléchargement / génération des pages |
+| `pogo_outils.py` | cartes pogo : inventaire / téléchargement / génération des pages / nospawn |
+| `training_outils.py` | maps training du repo GitHub : synchro / inventaire |
+| `audit_boot.py` | audit du miroir déployé : galerie + boot training + boot pogo |
 | `changer_texte_popup.py` | personnalise le popup d'avertissement (toutes langues) |
 | `chasse_cle.py` / `brute_force_cle.py` | recherche de la clé publique embarquée (archive) |
 
